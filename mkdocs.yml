@@ -1,0 +1,9 @@
+site_name: ChatOL 文档
+site_url: https://ChatArch.github.io/ChatOL
+repo_url: https://github.com/ChatArch/ChatOL
+theme:
+  name: material
+  language: zh
+nav:
+  - 首页: index.md
+  - English: index.en.md
