@@ -2,6 +2,10 @@
 
 This document captures the deployment pattern that informed ChatOL design. It deliberately avoids real service URLs, hostnames, project paths, account emails, passwords, cookies, proxy credentials, and other environment-specific values.
 
+## Sanitization Contract
+
+Keep this document portable. Use placeholders such as `<public-overleaf-host>`, `<local-port>`, `<admin-email>`, and `<ssh-host>` instead of live domains, private hostnames, usernames, credentials, cookies, tokens, or machine-specific paths. Operational reports may exist in private task directories, but repository documentation should describe the pattern only.
+
 ## Deployment Shape
 
 The tested deployment uses Overleaf Community Edition through the official Toolkit.
