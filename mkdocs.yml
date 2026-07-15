@@ -6,4 +6,8 @@ theme:
   language: zh
 nav:
   - 首页: index.md
+  - 设计:
+      - ChatOL 初版设计: design.md
+      - olcli CLI 树参考: olcli-cli-tree.md
+      - 自建 Overleaf 部署流程: self-hosted-overleaf-deployment.md
   - English: index.en.md
