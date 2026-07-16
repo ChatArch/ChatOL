@@ -6,12 +6,13 @@
 
 - Added a native Python Overleaf client for login/session bootstrap, project listing, project resolution, compile, PDF download, and compile output download.
 - Added importable workflow functions backing the CLI: `client_from_env`, `list_projects`, `get_project`, `compile_project`, `download_pdf`, and `download_output`.
-- Added CLI commands: `doctor`, `projects list`, `projects info`, `compile run`, `compile pdf`, and `compile output`.
+- Added CLI commands under the default `oleaf` command: `doctor`, `projects list`, `projects info`, `compile run`, `compile pdf`, and `compile output`.
 - Added development plan and live-practice documentation for the first server-side Overleaf smoke.
 
 ### Changed
 
 - Documented the rule that CLI commands must stay thin and call importable Python functions.
+- Renamed the primary console entry point from `chatol` to `oleaf`; Python imports remain under `chatol`.
 - Updated documentation links to the configured Pages custom-domain URL.
 
 ### Fixed

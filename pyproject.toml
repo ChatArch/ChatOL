@@ -23,7 +23,7 @@ Repository = "https://github.com/ChatArch/ChatOL"
 Documentation = "https://arch.gh.wzhecnu.cn/ChatOL/"
 
 [project.scripts]
-chatol = "chatol.cli:main"
+oleaf = "chatol.cli:main"
 
 [project.entry-points."chatenv.configs"]
 chatol = "chatol.config"

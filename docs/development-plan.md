@@ -17,7 +17,7 @@ ChatOL development follows these review rules:
 Scope implemented in the first development branch:
 
 ```text
-chatol
+oleaf
 ├── Python API
 │   ├── OverleafClient.from_password
 │   ├── OverleafClient.from_session_cookie
@@ -34,12 +34,12 @@ chatol
 │   ├── download_pdf
 │   └── download_output
 └── CLI thin wrappers
-    ├── chatol doctor
-    ├── chatol projects list
-    ├── chatol projects info <project>
-    ├── chatol compile run <project>
-    ├── chatol compile pdf <project> -o <path>
-    └── chatol compile output <project> <type> -o <path>
+    ├── oleaf doctor
+    ├── oleaf projects list
+    ├── oleaf projects info <project>
+    ├── oleaf compile run <project>
+    ├── oleaf compile pdf <project> -o <path>
+    └── oleaf compile output <project> <type> -o <path>
 ```
 
 Design choices:
@@ -55,7 +55,7 @@ Design choices:
 Planned next slice after Phase 1 live practice:
 
 ```text
-chatol files
+oleaf files
 ├── tree <project>
 ├── download <project> <remote-path> -o <local-path>
 ├── upload <project> <local-path> [--remote-path <path>]
@@ -73,7 +73,7 @@ Requirements:
 ## Phase 3: Safe Sync Planning
 
 ```text
-chatol sync
+oleaf sync
 ├── plan <project> <dir>
 ├── push <project> <dir> --apply
 ├── pull <project> <dir>
@@ -92,7 +92,7 @@ Requirements:
 Admin is intentionally separate from ordinary project workflows.
 
 ```text
-chatol admin
+oleaf admin
 ├── doctor
 ├── users list/get
 ├── users create/invite

@@ -15,7 +15,7 @@ class ChatolConfig(BaseEnvConfig):
         """Validate schema registration without external side effects."""
 
         print(f"Testing {cls._title}...")
-        print("Schema loaded; live Overleaf checks are done by `chatol doctor`.")
+        print("Schema loaded; live Overleaf checks are done by `oleaf doctor`.")
 
     CHATOL_BASE_URL = EnvField(
         "CHATOL_BASE_URL",

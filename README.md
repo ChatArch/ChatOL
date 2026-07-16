@@ -23,8 +23,8 @@ ChatOL: Python client and CLI for Overleaf workflows
 
 ```bash
 pip install -e ".[dev]"
-chatol --help
-chatol --version
+oleaf --help
+oleaf --version
 python -m pytest -q
 python -m build
 ```
@@ -38,12 +38,12 @@ export CHATOL_BASE_URL="https://overleaf.example.com"
 export CHATOL_EMAIL="<email>"
 export CHATOL_PASSWORD="<password>"
 
-chatol doctor --json
-chatol projects list --json
-chatol projects info "<project-name>" --json
-chatol compile run "<project-name>" --json
-chatol compile pdf "<project-name>" -o output.pdf --json
-chatol compile output "<project-name>" log -o output.log --json
+oleaf doctor --json
+oleaf projects list --json
+oleaf projects info "<project-name>" --json
+oleaf compile run "<project-name>" --json
+oleaf compile pdf "<project-name>" -o output.pdf --json
+oleaf compile output "<project-name>" log -o output.log --json
 ```
 
 密码和 session cookie 也可以通过 `--password-stdin` / `--session-stdin` 传入，避免出现在 shell history 或进程参数里。

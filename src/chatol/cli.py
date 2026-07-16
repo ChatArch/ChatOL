@@ -1,4 +1,4 @@
-"""CLI entrypoint for chatol."""
+"""CLI entrypoint for the oleaf command."""
 
 from __future__ import annotations
 
@@ -14,8 +14,8 @@ from chatol.errors import ChatOLError
 from chatol.workflows import client_from_env, compile_project, download_output, download_pdf, get_project, list_projects
 
 
-@click.group()
-@click.version_option(__version__, prog_name="chatol")
+@click.group(name="oleaf")
+@click.version_option(__version__)
 @click.option("--base-url", help="Overleaf instance base URL. Defaults to CHATOL_BASE_URL/OVERLEAF_BASE_URL.")
 @click.option("--email", help="Account email. Defaults to CHATOL_EMAIL/OVERLEAF_EMAIL.")
 @click.option("--password-stdin", is_flag=True, help="Read the account password from stdin.")

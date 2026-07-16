@@ -1,6 +1,6 @@
 # Live Practice: Server-Side Overleaf Smoke
 
-This page records the first live practice for ChatOL's native Python client and CLI. It is intentionally redacted: no real public service URLs, account emails, passwords, cookies, or internal build URLs are stored here.
+This page records the first live practice for ChatOL's native Python client and `oleaf` CLI. It is intentionally redacted: no real public service URLs, account emails, passwords, cookies, or internal build URLs are stored here.
 
 ## Environment Shape
 
@@ -24,12 +24,12 @@ export OVERLEAF_TIMEOUT=45
 ## Commands Practiced
 
 ```bash
-chatol doctor --json
-chatol projects list --json
-chatol projects info "<smoke-project-name>" --json
-chatol compile run "<smoke-project-name>" --json
-chatol compile pdf "<smoke-project-name>" -o smoke.pdf --json
-chatol compile output "<smoke-project-name>" log -o smoke.log --json
+oleaf doctor --json
+oleaf projects list --json
+oleaf projects info "<smoke-project-name>" --json
+oleaf compile run "<smoke-project-name>" --json
+oleaf compile pdf "<smoke-project-name>" -o smoke.pdf --json
+oleaf compile output "<smoke-project-name>" log -o smoke.log --json
 ```
 
 ## Results
