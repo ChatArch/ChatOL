@@ -32,18 +32,24 @@ class Project:
             trashed=payload.get("trashed"),
         )
 
-    def to_dict(self) -> dict[str, Any]:
-        """Return a JSON-serializable project representation."""
+    def to_dict(self, *, include_private: bool = False) -> dict[str, Any]:
+        """Return a JSON-serializable project representation.
 
-        return {
+        Owner and updater metadata can contain user IDs or emails, so CLI JSON
+        omits them by default. Python callers can opt in explicitly.
+        """
+
+        data: dict[str, Any] = {
             "id": self.id,
             "name": self.name,
             "last_updated": self.last_updated,
-            "last_updated_by": self.last_updated_by,
-            "owner": self.owner,
             "archived": self.archived,
             "trashed": self.trashed,
         }
+        if include_private:
+            data["last_updated_by"] = self.last_updated_by
+            data["owner"] = self.owner
+        return data
 
 
 @dataclass(frozen=True)

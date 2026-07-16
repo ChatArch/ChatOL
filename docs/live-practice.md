@@ -11,7 +11,7 @@ ChatOL checkout
   -> self-hosted Overleaf smoke project
 ```
 
-Secrets are loaded outside the repository, then passed through environment variables already supported by `chatol.workflows.client_from_env`.
+Secrets are loaded outside the repository, then passed through process environment variables or the active ChatEnv profile supported by `chatol.workflows.client_from_env`.
 
 ```bash
 set -a

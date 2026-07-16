@@ -1,5 +1,9 @@
 from pathlib import Path
 
+from chatenv import EnvStore, get_paths
+
+from chatol import workflows
+from chatol.config import ChatolConfig
 from chatol.errors import CompileError
 from chatol.models import CompileOutput, CompileResult, Project
 from chatol.workflows import compile_project, download_output, download_pdf, get_project, list_projects
@@ -30,6 +34,61 @@ class FakeClient:
 
     def download_output(self, project_id, output_type):
         return f"artifact:{output_type}".encode()
+
+
+class RecorderClient:
+    calls = []
+
+    @classmethod
+    def from_password(cls, base_url, email, password, *, timeout=30.0):
+        cls.calls.append(("password", base_url, email, password, timeout))
+        return cls()
+
+    @classmethod
+    def from_session_cookie(cls, base_url, session_cookie, *, cookie_name="overleaf_session2", timeout=30.0):
+        cls.calls.append(("session", base_url, session_cookie, cookie_name, timeout))
+        return cls()
+
+
+def test_client_from_env_loads_active_chatenv_profile(tmp_path: Path, monkeypatch):
+    store = EnvStore(get_paths(tmp_path).envs_dir)
+    store.save_active(
+        ChatolConfig,
+        {
+            "CHATOL_BASE_URL": "https://overleaf.example.test",
+            "CHATOL_SESSION": "session-from-chatenv",
+            "CHATOL_TIMEOUT": "12.5",
+        },
+    )
+    RecorderClient.calls = []
+    monkeypatch.setattr(workflows, "OverleafClient", RecorderClient)
+
+    workflows.client_from_env(chatarch_home=tmp_path)
+
+    assert RecorderClient.calls == [
+        ("session", "https://overleaf.example.test", "session-from-chatenv", "overleaf_session2", 12.5)
+    ]
+
+
+def test_client_from_env_prefers_process_env_over_chatenv(tmp_path: Path, monkeypatch):
+    store = EnvStore(get_paths(tmp_path).envs_dir)
+    store.save_active(
+        ChatolConfig,
+        {
+            "CHATOL_BASE_URL": "https://from-chatenv.example.test",
+            "CHATOL_SESSION": "session-from-chatenv",
+        },
+    )
+    monkeypatch.setenv("CHATOL_BASE_URL", "https://from-env.example.test")
+    monkeypatch.setenv("CHATOL_SESSION", "session-from-env")
+    RecorderClient.calls = []
+    monkeypatch.setattr(workflows, "OverleafClient", RecorderClient)
+
+    workflows.client_from_env(chatarch_home=tmp_path)
+
+    assert RecorderClient.calls == [
+        ("session", "https://from-env.example.test", "session-from-env", "overleaf_session2", 30.0)
+    ]
 
 
 def test_workflow_functions_accept_direct_client():

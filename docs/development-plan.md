@@ -45,7 +45,7 @@ oleaf
 Design choices:
 
 - Use the Python standard library HTTP stack first to keep the dependency surface small.
-- Support both `CHATOL_*` and existing `OVERLEAF_*` environment variable names for server-side practice.
+- Support `CHATOL_*` through ChatEnv active profiles and process env, plus existing `OVERLEAF_*` process env names for server-side practice.
 - Parse Overleaf project metadata from HTML meta tags, matching the working `olcli` approach.
 - Hide internal compile URLs from CLI output by default.
 - Put compile cooldown/retry in workflow functions, not the CLI.

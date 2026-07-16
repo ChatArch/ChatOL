@@ -213,11 +213,11 @@ class OverleafClient:
     def download_compile_output(self, output: CompileOutput, result: CompileResult | None = None) -> bytes:
         """Download a compile output returned by `compile_project`."""
 
-        url = output.url
+        url = _safe_output_url(self.base_url, output.url)
         if result and result.clsi_server_id:
             separator = "&" if "?" in url else "?"
             url = f"{url}{separator}clsiserverid={urllib.parse.quote(result.clsi_server_id)}"
-        response = self._request("GET", _absolute_url(self.base_url, url))
+        response = self._request("GET", url)
         if not response.ok:
             raise CompileError("download_failed", f"Download failed: {response.status}")
         return response.body
@@ -260,6 +260,17 @@ def _absolute_url(base_url: str, path_or_url: str) -> str:
     if path_or_url.startswith("http://") or path_or_url.startswith("https://"):
         return path_or_url
     return urllib.parse.urljoin(base_url.rstrip("/") + "/", path_or_url.lstrip("/"))
+
+
+def _safe_output_url(base_url: str, path_or_url: str) -> str:
+    """Resolve an artifact URL and reject cross-origin downloads."""
+
+    resolved = _absolute_url(base_url, path_or_url)
+    base_parts = urllib.parse.urlparse(base_url)
+    output_parts = urllib.parse.urlparse(resolved)
+    if (output_parts.scheme, output_parts.netloc) != (base_parts.scheme, base_parts.netloc):
+        raise CompileError("unsafe_output_url", "Refusing to download a cross-origin compile output")
+    return resolved
 
 
 def _make_cookie(base_url: str, name: str, value: str) -> Cookie:

@@ -84,7 +84,7 @@ def extract_projects_payloads(text: str) -> list[Any]:
     candidates: list[str] = []
 
     for meta in parser.meta:
-        name = meta.get("name", "")
+        name = meta.get("name", "").lower()
         content = meta.get("content", "")
         if not content:
             continue
@@ -97,7 +97,11 @@ def extract_projects_payloads(text: str) -> list[Any]:
             candidates.append(content)
 
     payloads: list[Any] = []
+    seen_candidates: set[str] = set()
     for candidate in candidates:
+        if candidate in seen_candidates:
+            continue
+        seen_candidates.add(candidate)
         try:
             payloads.append(_json_from_meta_content(candidate))
         except json.JSONDecodeError:

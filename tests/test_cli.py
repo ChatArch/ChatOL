@@ -5,6 +5,8 @@ from chatol.cli import main
 
 
 def test_version_option_reports_package_version():
+    assert main.name == "oleaf"
+
     result = CliRunner().invoke(main, ["--version"])
 
     assert result.exit_code == 0

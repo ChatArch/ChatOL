@@ -33,6 +33,8 @@ python -m build
 
 The CLI is a thin wrapper; the same behavior can be imported from `chatol.workflows` and `chatol.client.OverleafClient`.
 
+Configuration can come from process environment variables or the active ChatEnv profile. The examples use placeholders; pass real passwords through `chatenv paste --stdin`, a private profile, environment variables, or `--password-stdin` instead of shell history.
+
 ```bash
 export CHATOL_BASE_URL="https://overleaf.example.com"
 export CHATOL_EMAIL="<email>"
@@ -50,7 +52,7 @@ Passwords and session cookies can also be passed with `--password-stdin` / `--se
 
 ## CLI Contract
 
-This template depends on `chatstyle>=0.1.0,<0.2.0` and `chatenv>=0.2.0,<0.3.0`. New commands should prefer:
+This template depends on `chatstyle>=0.1.0,<0.2.0` and `chatenv>=0.2.2,<0.3.0`. New commands should prefer:
 
 - `CommandSchema` / `CommandField` for inputs.
 - `add_interactive_option()` for the shared `-i/-I` switch.

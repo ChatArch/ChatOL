@@ -13,8 +13,11 @@
 
 - Documented the rule that CLI commands must stay thin and call importable Python functions.
 - Renamed the primary console entry point from `chatol` to `oleaf`; Python imports remain under `chatol`.
+- Loaded active ChatEnv `chatol` profiles in `chatol.workflows.client_from_env`, while preserving process-env and explicit-argument precedence.
 - Updated documentation links to the configured Pages custom-domain URL.
 
 ### Fixed
 
-- Added redaction-oriented output defaults so compile URLs are not emitted by default.
+- Added redaction-oriented output defaults so compile URLs and private owner/updater metadata are not emitted by default.
+- Rejected cross-origin compile-output URLs before download, preventing auth headers from being sent to unexpected hosts.
+- Parsed Overleaf project meta names case-insensitively, including raw-list project payloads.

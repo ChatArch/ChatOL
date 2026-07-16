@@ -33,6 +33,8 @@ python -m build
 
 CLI 只做薄封装；对应能力也可以从 `chatol.workflows` 和 `chatol.client.OverleafClient` 直接 import 调用。
 
+配置可以来自当前进程环境变量，也可以来自 ChatEnv active profile。命令行示例使用占位符；真实密码建议用 `chatenv paste --stdin`、私有 profile、环境变量或 `--password-stdin`，不要写进 shell history。
+
 ```bash
 export CHATOL_BASE_URL="https://overleaf.example.com"
 export CHATOL_EMAIL="<email>"
@@ -50,7 +52,7 @@ oleaf compile output "<project-name>" log -o output.log --json
 
 ## CLI 规范
 
-这个模板默认依赖 `chatstyle>=0.1.0,<0.2.0` 和 `chatenv>=0.2.0,<0.3.0`，新的命令应优先使用：
+这个模板默认依赖 `chatstyle>=0.1.0,<0.2.0` 和 `chatenv>=0.2.2,<0.3.0`，新的命令应优先使用：
 
 - `CommandSchema` / `CommandField` 描述输入。
 - `add_interactive_option()` 提供统一 `-i/-I`。
