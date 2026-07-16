@@ -5,7 +5,7 @@
     <a href="https://github.com/ChatArch/ChatOL/actions/workflows/ci.yml">
         <img src="https://github.com/ChatArch/ChatOL/actions/workflows/ci.yml/badge.svg" alt="Tests" />
     </a>
-    <a href="https://ChatArch.github.io/ChatOL">
+    <a href="https://arch.gh.wzhecnu.cn/ChatOL/">
         <img src="https://img.shields.io/badge/docs-mkdocs-blue.svg" alt="Documentation" />
     </a>
 </div>
@@ -23,15 +23,36 @@ ChatOL: Python client and CLI for Overleaf workflows
 
 ```bash
 pip install -e ".[dev]"
-chatol --help
-chatol --version
+oleaf --help
+oleaf --version
 python -m pytest -q
 python -m build
 ```
 
+## Overleaf CLI 示例
+
+CLI 只做薄封装；对应能力也可以从 `chatol.workflows` 和 `chatol.client.OverleafClient` 直接 import 调用。
+
+配置可以来自当前进程环境变量，也可以来自 ChatEnv active `overleaf` profile。配置键优先复用 Overleaf 官方已有名称，例如 `OVERLEAF_SITE_URL` 和 `OVERLEAF_ADMIN_EMAIL`；官方没有的密码、session、HTTP timeout 等补充字段也统一放在 `OVERLEAF_*` 命名空间里，不再维护 `CHATOL_*` 兼容入口。命令行示例使用占位符；真实密码建议用 `chatenv paste --stdin`、私有 profile、环境变量或 `--password-stdin`，不要写进 shell history。
+
+```bash
+export OVERLEAF_SITE_URL="https://overleaf.example.com"
+export OVERLEAF_ADMIN_EMAIL="<email>"
+export OVERLEAF_ADMIN_PASSWORD="<password>"
+
+oleaf doctor --json
+oleaf projects list --json
+oleaf projects info "<project-name>" --json
+oleaf compile run "<project-name>" --json
+oleaf compile pdf "<project-name>" -o output.pdf --json
+oleaf compile output "<project-name>" log -o output.log --json
+```
+
+密码和 session cookie 也可以通过 `--password-stdin` / `--session-stdin` 传入，避免出现在 shell history 或进程参数里。
+
 ## CLI 规范
 
-这个模板默认依赖 `chatstyle>=0.1.0,<0.2.0` 和 `chatenv>=0.2.0,<0.3.0`，新的命令应优先使用：
+这个模板默认依赖 `chatstyle>=0.1.0,<0.2.0` 和 `chatenv>=0.2.2,<0.3.0`，新的命令应优先使用：
 
 - `CommandSchema` / `CommandField` 描述输入。
 - `add_interactive_option()` 提供统一 `-i/-I`。

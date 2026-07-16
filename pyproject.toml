@@ -9,7 +9,7 @@ description = "ChatOL: Python client and CLI for Overleaf workflows"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
-dependencies = ["click>=8.0", "chatstyle>=0.1.0,<0.2.0", "chatenv>=0.2.0,<0.3.0"]
+dependencies = ["click>=8.0,<9.0", "chatstyle>=0.1.0,<0.2.0", "chatenv>=0.2.2,<0.3.0"]
 authors = [{name = "ChatArch", email = "1073853456@qq.com"}]
 keywords = ["chatol", "chatarch", "cli"]
 classifiers = [
@@ -20,13 +20,13 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/ChatArch/ChatOL"
 Repository = "https://github.com/ChatArch/ChatOL"
-Documentation = "https://ChatArch.github.io/ChatOL"
+Documentation = "https://arch.gh.wzhecnu.cn/ChatOL/"
 
 [project.scripts]
-chatol = "chatol.cli:main"
+oleaf = "chatol.cli:main"
 
 [project.entry-points."chatenv.configs"]
-chatol = "chatol.config"
+overleaf = "chatol.config"
 
 [project.optional-dependencies]
 dev = ["build", "pytest", "twine"]
