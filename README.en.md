@@ -5,7 +5,7 @@
     <a href="https://github.com/ChatArch/ChatOL/actions/workflows/ci.yml">
         <img src="https://github.com/ChatArch/ChatOL/actions/workflows/ci.yml/badge.svg" alt="Tests" />
     </a>
-    <a href="https://ChatArch.github.io/ChatOL">
+    <a href="https://arch.gh.wzhecnu.cn/ChatOL/">
         <img src="https://img.shields.io/badge/docs-mkdocs-blue.svg" alt="Documentation" />
     </a>
 </div>
@@ -28,6 +28,25 @@ chatol --version
 python -m pytest -q
 python -m build
 ```
+
+## Overleaf CLI Example
+
+The CLI is a thin wrapper; the same behavior can be imported from `chatol.workflows` and `chatol.client.OverleafClient`.
+
+```bash
+export CHATOL_BASE_URL="https://overleaf.example.com"
+export CHATOL_EMAIL="<email>"
+export CHATOL_PASSWORD="<password>"
+
+chatol doctor --json
+chatol projects list --json
+chatol projects info "<project-name>" --json
+chatol compile run "<project-name>" --json
+chatol compile pdf "<project-name>" -o output.pdf --json
+chatol compile output "<project-name>" log -o output.log --json
+```
+
+Passwords and session cookies can also be passed with `--password-stdin` / `--session-stdin` so they do not appear in shell history or process arguments.
 
 ## CLI Contract
 

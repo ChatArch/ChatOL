@@ -20,7 +20,7 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/ChatArch/ChatOL"
 Repository = "https://github.com/ChatArch/ChatOL"
-Documentation = "https://ChatArch.github.io/ChatOL"
+Documentation = "https://arch.gh.wzhecnu.cn/ChatOL/"
 
 [project.scripts]
 chatol = "chatol.cli:main"

@@ -5,7 +5,7 @@
     <a href="https://github.com/ChatArch/ChatOL/actions/workflows/ci.yml">
         <img src="https://github.com/ChatArch/ChatOL/actions/workflows/ci.yml/badge.svg" alt="Tests" />
     </a>
-    <a href="https://ChatArch.github.io/ChatOL">
+    <a href="https://arch.gh.wzhecnu.cn/ChatOL/">
         <img src="https://img.shields.io/badge/docs-mkdocs-blue.svg" alt="Documentation" />
     </a>
 </div>
@@ -28,6 +28,25 @@ chatol --version
 python -m pytest -q
 python -m build
 ```
+
+## Overleaf CLI 示例
+
+CLI 只做薄封装；对应能力也可以从 `chatol.workflows` 和 `chatol.client.OverleafClient` 直接 import 调用。
+
+```bash
+export CHATOL_BASE_URL="https://overleaf.example.com"
+export CHATOL_EMAIL="<email>"
+export CHATOL_PASSWORD="<password>"
+
+chatol doctor --json
+chatol projects list --json
+chatol projects info "<project-name>" --json
+chatol compile run "<project-name>" --json
+chatol compile pdf "<project-name>" -o output.pdf --json
+chatol compile output "<project-name>" log -o output.log --json
+```
+
+密码和 session cookie 也可以通过 `--password-stdin` / `--session-stdin` 传入，避免出现在 shell history 或进程参数里。
 
 ## CLI 规范
 
