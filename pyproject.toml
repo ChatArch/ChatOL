@@ -26,7 +26,7 @@ Documentation = "https://arch.gh.wzhecnu.cn/ChatOL/"
 oleaf = "chatol.cli:main"
 
 [project.entry-points."chatenv.configs"]
-chatol = "chatol.config"
+overleaf = "chatol.config"
 
 [project.optional-dependencies]
 dev = ["build", "pytest", "twine"]

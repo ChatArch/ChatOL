@@ -16,8 +16,8 @@ from chatol.workflows import client_from_env, compile_project, download_output, 
 
 @click.group(name="oleaf")
 @click.version_option(__version__)
-@click.option("--base-url", help="Overleaf instance base URL. Defaults to CHATOL_BASE_URL/OVERLEAF_BASE_URL.")
-@click.option("--email", help="Account email. Defaults to CHATOL_EMAIL/OVERLEAF_EMAIL.")
+@click.option("--base-url", help="Overleaf instance base URL. Defaults to OVERLEAF_SITE_URL.")
+@click.option("--email", help="Account email. Defaults to OVERLEAF_ADMIN_EMAIL.")
 @click.option("--password-stdin", is_flag=True, help="Read the account password from stdin.")
 @click.option("--session-stdin", is_flag=True, help="Read an Overleaf session cookie from stdin.")
 @click.option("--cookie-name", help="Session cookie name. Defaults to overleaf_session2.")

@@ -3,7 +3,7 @@ from pathlib import Path
 from chatenv import EnvStore, get_paths
 
 from chatol import workflows
-from chatol.config import ChatolConfig
+from chatol.config import OverleafConfig
 from chatol.errors import CompileError
 from chatol.models import CompileOutput, CompileResult, Project
 from chatol.workflows import compile_project, download_output, download_pdf, get_project, list_projects
@@ -53,11 +53,11 @@ class RecorderClient:
 def test_client_from_env_loads_active_chatenv_profile(tmp_path: Path, monkeypatch):
     store = EnvStore(get_paths(tmp_path).envs_dir)
     store.save_active(
-        ChatolConfig,
+        OverleafConfig,
         {
-            "CHATOL_BASE_URL": "https://overleaf.example.test",
-            "CHATOL_SESSION": "session-from-chatenv",
-            "CHATOL_TIMEOUT": "12.5",
+            "OVERLEAF_SITE_URL": "https://overleaf.example.test",
+            "OVERLEAF_SESSION_COOKIE": "session-from-chatenv",
+            "OVERLEAF_HTTP_TIMEOUT": "12.5",
         },
     )
     RecorderClient.calls = []
@@ -73,14 +73,14 @@ def test_client_from_env_loads_active_chatenv_profile(tmp_path: Path, monkeypatc
 def test_client_from_env_prefers_process_env_over_chatenv(tmp_path: Path, monkeypatch):
     store = EnvStore(get_paths(tmp_path).envs_dir)
     store.save_active(
-        ChatolConfig,
+        OverleafConfig,
         {
-            "CHATOL_BASE_URL": "https://from-chatenv.example.test",
-            "CHATOL_SESSION": "session-from-chatenv",
+            "OVERLEAF_SITE_URL": "https://from-chatenv.example.test",
+            "OVERLEAF_SESSION_COOKIE": "session-from-chatenv",
         },
     )
-    monkeypatch.setenv("CHATOL_BASE_URL", "https://from-env.example.test")
-    monkeypatch.setenv("CHATOL_SESSION", "session-from-env")
+    monkeypatch.setenv("OVERLEAF_SITE_URL", "https://from-env.example.test")
+    monkeypatch.setenv("OVERLEAF_SESSION_COOKIE", "session-from-env")
     RecorderClient.calls = []
     monkeypatch.setattr(workflows, "OverleafClient", RecorderClient)
 
@@ -89,6 +89,28 @@ def test_client_from_env_prefers_process_env_over_chatenv(tmp_path: Path, monkey
     assert RecorderClient.calls == [
         ("session", "https://from-env.example.test", "session-from-env", "overleaf_session2", 30.0)
     ]
+
+
+def test_client_from_env_ignores_legacy_and_nonofficial_env_aliases(tmp_path: Path, monkeypatch):
+    for name in (
+        "OVERLEAF_SITE_URL",
+        "OVERLEAF_ADMIN_EMAIL",
+        "OVERLEAF_ADMIN_PASSWORD",
+        "OVERLEAF_SESSION_COOKIE",
+        "OVERLEAF_HTTP_TIMEOUT",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("CHATOL_BASE_URL", "https://legacy.example.test")
+    monkeypatch.setenv("CHATOL_SESSION", "legacy-session")
+    monkeypatch.setenv("OVERLEAF_BASE_URL", "https://nonofficial.example.test")
+    monkeypatch.setenv("OVERLEAF_SESSION", "nonofficial-session")
+
+    try:
+        workflows.client_from_env(chatarch_home=tmp_path)
+    except ValueError as exc:
+        assert "OVERLEAF_SITE_URL" in str(exc)
+    else:  # pragma: no cover - defensive assertion for the contract.
+        raise AssertionError("legacy env aliases should not configure Overleaf clients")
 
 
 def test_workflow_functions_accept_direct_client():

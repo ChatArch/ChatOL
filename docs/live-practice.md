@@ -11,14 +11,14 @@ ChatOL checkout
   -> self-hosted Overleaf smoke project
 ```
 
-Secrets are loaded outside the repository, then passed through process environment variables or the active ChatEnv profile supported by `chatol.workflows.client_from_env`.
+Secrets are loaded outside the repository, then passed through Overleaf-namespaced process environment variables or the active ChatEnv `overleaf` profile supported by `chatol.workflows.client_from_env`.
 
 ```bash
 set -a
 source <private-overleaf-env>
 set +a
-export OVERLEAF_BASE_URL=http://127.0.0.1:<overleaf-port>
-export OVERLEAF_TIMEOUT=45
+export OVERLEAF_SITE_URL=http://127.0.0.1:<overleaf-port>
+export OVERLEAF_HTTP_TIMEOUT=45
 ```
 
 ## Commands Practiced

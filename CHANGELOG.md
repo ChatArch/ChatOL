@@ -13,7 +13,8 @@
 
 - Documented the rule that CLI commands must stay thin and call importable Python functions.
 - Renamed the primary console entry point from `chatol` to `oleaf`; Python imports remain under `chatol`.
-- Loaded active ChatEnv `chatol` profiles in `chatol.workflows.client_from_env`, while preserving process-env and explicit-argument precedence.
+- Loaded active ChatEnv `overleaf` profiles in `chatol.workflows.client_from_env`, while preserving process-env and explicit-argument precedence.
+- Standardized configuration on Overleaf names: official `OVERLEAF_SITE_URL` / `OVERLEAF_ADMIN_EMAIL` plus `OVERLEAF_*` ChatOL extras, without a parallel `CHATOL_*` env-key path.
 - Updated documentation links to the configured Pages custom-domain URL.
 
 ### Fixed

@@ -1,14 +1,14 @@
-"Typed environment configuration for ChatOL."
+"Typed environment configuration for Overleaf."
 
 from chatenv import BaseEnvConfig, EnvField
 
 
-class ChatolConfig(BaseEnvConfig):
-    "ChatOL ChatEnv configuration."
+class OverleafConfig(BaseEnvConfig):
+    "Overleaf ChatEnv configuration."
 
-    _title = "ChatOL Configuration"
-    _aliases = ["chatol"]
-    _storage_dir = "Chatol"
+    _title = "Overleaf Configuration"
+    _aliases = ["overleaf"]
+    _storage_dir = "Overleaf"
 
     @classmethod
     def test(cls) -> None:
@@ -17,36 +17,36 @@ class ChatolConfig(BaseEnvConfig):
         print(f"Testing {cls._title}...")
         print("Schema loaded; live Overleaf checks are done by `oleaf doctor`.")
 
-    CHATOL_BASE_URL = EnvField(
-        "CHATOL_BASE_URL",
-        desc="Overleaf instance base URL",
+    OVERLEAF_SITE_URL = EnvField(
+        "OVERLEAF_SITE_URL",
+        desc="Overleaf instance site URL",
         is_sensitive=False,
     )
-    CHATOL_EMAIL = EnvField(
-        "CHATOL_EMAIL",
-        desc="Overleaf login email",
+    OVERLEAF_ADMIN_EMAIL = EnvField(
+        "OVERLEAF_ADMIN_EMAIL",
+        desc="Overleaf admin or login email",
         is_sensitive=True,
     )
-    CHATOL_PASSWORD = EnvField(
-        "CHATOL_PASSWORD",
-        desc="Overleaf login password",
+    OVERLEAF_ADMIN_PASSWORD = EnvField(
+        "OVERLEAF_ADMIN_PASSWORD",
+        desc="Overleaf admin or login password",
         is_sensitive=True,
     )
-    CHATOL_SESSION = EnvField(
-        "CHATOL_SESSION",
+    OVERLEAF_SESSION_COOKIE = EnvField(
+        "OVERLEAF_SESSION_COOKIE",
         desc="Overleaf session cookie value",
         is_sensitive=True,
     )
-    CHATOL_COOKIE_NAME = EnvField(
-        "CHATOL_COOKIE_NAME",
+    OVERLEAF_SESSION_COOKIE_NAME = EnvField(
+        "OVERLEAF_SESSION_COOKIE_NAME",
         desc="Overleaf session cookie name",
         is_sensitive=False,
     )
-    CHATOL_TIMEOUT = EnvField(
-        "CHATOL_TIMEOUT",
+    OVERLEAF_HTTP_TIMEOUT = EnvField(
+        "OVERLEAF_HTTP_TIMEOUT",
         desc="HTTP timeout in seconds",
         is_sensitive=False,
     )
 
 
-__all__ = ["ChatolConfig"]
+__all__ = ["OverleafConfig"]

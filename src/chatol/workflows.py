@@ -10,7 +10,7 @@ from typing import Callable, Iterable
 from chatenv import EnvStore, get_paths
 
 from chatol.client import DEFAULT_COOKIE_NAME, OverleafClient
-from chatol.config import ChatolConfig
+from chatol.config import OverleafConfig
 from chatol.errors import CompileError
 from chatol.models import CompileResult, Project
 
@@ -30,19 +30,18 @@ def client_from_env(
     """Build an OverleafClient from explicit args, env vars, or ChatEnv.
 
     Explicit arguments win, then process environment variables, then the active
-    ChatEnv `chatol` profile. Supported process-environment names intentionally
-    include both ChatOL and Overleaf forms to make server-side practice easy
-    without copying secrets.
+    ChatEnv `overleaf` profile. Configuration keys use the Overleaf namespace;
+    ChatOL-specific extras should also be named with an `OVERLEAF_*` prefix.
     """
 
     chatenv_values = _load_active_chatenv(chatarch_home)
-    resolved_base_url = base_url or _first_value(chatenv_values, "CHATOL_BASE_URL", "OVERLEAF_BASE_URL", "OVERLEAF_URL")
+    resolved_base_url = base_url or _first_value(chatenv_values, "OVERLEAF_SITE_URL")
     if not resolved_base_url:
-        raise ValueError("Missing base URL. Set CHATOL_BASE_URL or pass --base-url.")
-    timeout_value = timeout if timeout is not None else _first_value(chatenv_values, "CHATOL_TIMEOUT", "OVERLEAF_TIMEOUT")
+        raise ValueError("Missing base URL. Set OVERLEAF_SITE_URL or pass --base-url.")
+    timeout_value = timeout if timeout is not None else _first_value(chatenv_values, "OVERLEAF_HTTP_TIMEOUT")
     resolved_timeout = float(timeout_value) if timeout_value is not None else 30.0
-    resolved_cookie_name = cookie_name or _first_value(chatenv_values, "CHATOL_COOKIE_NAME", "OVERLEAF_COOKIE_NAME") or DEFAULT_COOKIE_NAME
-    resolved_session = session or _first_value(chatenv_values, "CHATOL_SESSION", "OVERLEAF_SESSION")
+    resolved_cookie_name = cookie_name or _first_value(chatenv_values, "OVERLEAF_SESSION_COOKIE_NAME") or DEFAULT_COOKIE_NAME
+    resolved_session = session or _first_value(chatenv_values, "OVERLEAF_SESSION_COOKIE")
     if resolved_session:
         return OverleafClient.from_session_cookie(
             resolved_base_url,
@@ -51,10 +50,10 @@ def client_from_env(
             timeout=resolved_timeout,
         )
 
-    resolved_email = email or _first_value(chatenv_values, "CHATOL_EMAIL", "OVERLEAF_EMAIL", "OVERLEAF_ADMIN_EMAIL")
-    resolved_password = password or _first_value(chatenv_values, "CHATOL_PASSWORD", "OVERLEAF_PASSWORD", "OVERLEAF_ADMIN_PASSWORD")
+    resolved_email = email or _first_value(chatenv_values, "OVERLEAF_ADMIN_EMAIL")
+    resolved_password = password or _first_value(chatenv_values, "OVERLEAF_ADMIN_PASSWORD")
     if not resolved_email or not resolved_password:
-        raise ValueError("Missing credentials. Set CHATOL_SESSION or CHATOL_EMAIL/CHATOL_PASSWORD.")
+        raise ValueError("Missing credentials. Set OVERLEAF_SESSION_COOKIE or OVERLEAF_ADMIN_EMAIL/OVERLEAF_ADMIN_PASSWORD.")
     return OverleafClient.from_password(resolved_base_url, resolved_email, resolved_password, timeout=resolved_timeout)
 
 
@@ -171,7 +170,7 @@ def _load_active_chatenv(chatarch_home: str | Path | None) -> dict[str, str]:
     """Load active ChatEnv values without mutating process environment."""
 
     store = EnvStore(get_paths(chatarch_home).envs_dir)
-    return store.load_active(ChatolConfig)
+    return store.load_active(OverleafConfig)
 
 
 def _first_value(chatenv_values: dict[str, str], *names: str) -> str | None:

@@ -33,12 +33,12 @@ python -m build
 
 The CLI is a thin wrapper; the same behavior can be imported from `chatol.workflows` and `chatol.client.OverleafClient`.
 
-Configuration can come from process environment variables or the active ChatEnv profile. The examples use placeholders; pass real passwords through `chatenv paste --stdin`, a private profile, environment variables, or `--password-stdin` instead of shell history.
+Configuration can come from process environment variables or the active ChatEnv `overleaf` profile. Configuration keys reuse official Overleaf names where they exist, such as `OVERLEAF_SITE_URL` and `OVERLEAF_ADMIN_EMAIL`; password, session, and HTTP timeout extras also stay in the `OVERLEAF_*` namespace instead of adding a parallel `CHATOL_*` set. The examples use placeholders; pass real passwords through `chatenv paste --stdin`, a private profile, environment variables, or `--password-stdin` instead of shell history.
 
 ```bash
-export CHATOL_BASE_URL="https://overleaf.example.com"
-export CHATOL_EMAIL="<email>"
-export CHATOL_PASSWORD="<password>"
+export OVERLEAF_SITE_URL="https://overleaf.example.com"
+export OVERLEAF_ADMIN_EMAIL="<email>"
+export OVERLEAF_ADMIN_PASSWORD="<password>"
 
 oleaf doctor --json
 oleaf projects list --json

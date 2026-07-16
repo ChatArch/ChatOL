@@ -33,12 +33,12 @@ python -m build
 
 CLI 只做薄封装；对应能力也可以从 `chatol.workflows` 和 `chatol.client.OverleafClient` 直接 import 调用。
 
-配置可以来自当前进程环境变量，也可以来自 ChatEnv active profile。命令行示例使用占位符；真实密码建议用 `chatenv paste --stdin`、私有 profile、环境变量或 `--password-stdin`，不要写进 shell history。
+配置可以来自当前进程环境变量，也可以来自 ChatEnv active `overleaf` profile。配置键优先复用 Overleaf 官方已有名称，例如 `OVERLEAF_SITE_URL` 和 `OVERLEAF_ADMIN_EMAIL`；官方没有的密码、session、HTTP timeout 等补充字段也统一放在 `OVERLEAF_*` 命名空间里，不再维护 `CHATOL_*` 兼容入口。命令行示例使用占位符；真实密码建议用 `chatenv paste --stdin`、私有 profile、环境变量或 `--password-stdin`，不要写进 shell history。
 
 ```bash
-export CHATOL_BASE_URL="https://overleaf.example.com"
-export CHATOL_EMAIL="<email>"
-export CHATOL_PASSWORD="<password>"
+export OVERLEAF_SITE_URL="https://overleaf.example.com"
+export OVERLEAF_ADMIN_EMAIL="<email>"
+export OVERLEAF_ADMIN_PASSWORD="<password>"
 
 oleaf doctor --json
 oleaf projects list --json
