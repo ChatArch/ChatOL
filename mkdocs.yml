@@ -1,11 +1,73 @@
 site_name: ChatOL 文档
 site_url: https://arch.gh.wzhecnu.cn/ChatOL/
 repo_url: https://github.com/ChatArch/ChatOL
+repo_name: ChatArch/ChatOL
+edit_uri: edit/main/docs/
+docs_dir: docs/
 theme:
   name: material
   language: zh
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.action.edit
+plugins:
+  - search
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: true
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: zh
+          default: true
+          name: 中文
+          build: true
+          site_name: ChatOL 文档
+        - locale: en
+          name: English
+          build: true
+          site_name: ChatOL Documentation
+          nav_translations:
+            首页: Home
+            快速开始: Quickstart
+            安装与配置: Installation and Configuration
+            Overleaf 连接: Overleaf Connectivity
+            部署与连接边界: Deployment and Connectivity Boundaries
+            论文编译 Flow: Paper Compile Flow
+            编译与产物: Compile and Artifacts
+            真实实践: Live Practice
+            CLI / API: CLI / API
+            CLI 实战指南: CLI Guide
+            Python 接口树: Python Interface Tree
+            CLI 能力地图: CLI Capability Map
+            路线图: Roadmap
+            开发计划: Development Plan
+extra:
+  alternate:
+    - name: 中文
+      link: /ChatOL/
+      lang: zh
+    - name: English
+      link: /ChatOL/en/
+      lang: en
 nav:
   - 首页: index.md
-  - 开发计划: development-plan.md
-  - 真实实践: live-practice.md
-  - English: index.en.md
+  - 快速开始:
+      - 安装与配置: overleaf-quickstart.md
+  - Overleaf 连接:
+      - 部署与连接边界: overleaf-service-operations.md
+  - 论文编译 Flow:
+      - 编译与产物: compile-flow-quickstart.md
+      - 真实实践: live-practice.md
+  - CLI / API:
+      - CLI 实战指南: cli-guide.md
+      - Python 接口树: interface-tree.md
+      - CLI 能力地图: chatol-cli-tree.md
+  - 路线图:
+      - 开发计划: development-plan.md
