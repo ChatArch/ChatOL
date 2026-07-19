@@ -1,6 +1,6 @@
 # Agent 使用 Overleaf 的任务闭环
 
-这篇文档说明如何用 ChatOL 把 Overleaf 项目接入本地 Agent 工作流。核心思路是：从 Overleaf 拉取项目源码到本地任务目录，Agent 只修改本地文件，然后把明确选择的文件上传回 Overleaf，再触发远端编译并下载产物。
+这篇教程说明如何用 ChatOL 把 Overleaf 项目接入本地 Agent 工作流。核心思路是：从 Overleaf 拉取项目源码到本地任务目录，Agent 只修改本地文件，然后把明确选择的文件上传回 Overleaf，再触发远端编译并下载产物。
 
 ## 工作流
 
@@ -8,7 +8,7 @@
 本地任务目录
 ├── source/      # 从 Overleaf 拉取的源码
 ├── artifacts/   # PDF、log、bbl、aux 等编译产物
-└── notes/       # 本地任务说明或诊断记录，不上传到 Overleaf
+└── notes/       # 本地任务说明或诊断笔记，不上传到 Overleaf
 ```
 
 推荐流程：
@@ -36,7 +36,7 @@ oleaf files pull "<project-name>" ./source --force --json
 
 ## 上传单个文件
 
-当前第一版只支持上传到 Overleaf 项目根目录，适合修改 `main.tex`、`sample.bib` 这类根目录文件：
+上传命令用于把本地文件写回 Overleaf 项目根目录，适合修改 `main.tex`、`sample.bib` 这类根目录文件：
 
 ```bash
 oleaf files upload "<project-name>" ./source/main.tex --remote-path main.tex --json
@@ -46,7 +46,7 @@ oleaf files upload "<project-name>" ./source/main.tex --remote-path main.tex --j
 
 - `--remote-path` 目前应是根目录文件名，不应包含 `/`。
 - 上传命令不是完整同步器，不会自动比较目录差异。
-- 嵌套目录上传、自动建目录和批量同步属于后续能力。
+- 如需处理嵌套目录，请先在 Overleaf 中准备好结构，或等同步能力完善后再做批量操作。
 
 ## 删除单个文件
 
@@ -98,4 +98,4 @@ download_output(project_name, "log", Path("artifacts/output.log"))
 - `files upload` 当前只支持根目录单文件上传。
 - `files delete` 必须显式 `--apply`，且不删除文件夹。
 - 当 Overleaf 项目页缺少 `rootFolder` 元数据时，ChatOL 会通过 Socket.IO 项目树解析根目录和文件 ID。
-- ChatOL 目前不是完整同步器；批量同步应等 `sync plan` 和显式 `sync push --apply` 能力完成后再使用。
+- ChatOL 不是完整同步器；不要把 `files upload` 当作批量同步命令使用。

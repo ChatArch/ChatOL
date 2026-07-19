@@ -1,33 +1,35 @@
 # Overleaf 快速开始
 
-这篇文档是从一台已经能访问 Overleaf 的机器开始，跑通 ChatOL `oleaf` 的最小路径。它不记录真实域名、账号、密码、cookie 或内部项目 ID。
+这篇教程带你从零开始配置 ChatOL，并用 `oleaf` 连接一个自托管 Overleaf 实例。完成后，你可以列出项目、编译项目、下载 PDF 和日志。
 
-## 1. 安装 ChatOL
+## 前置条件
 
-从 PyPI 安装稳定版：
+- 一台能访问 Overleaf Web 服务的机器。
+- 一个可登录 Overleaf 的账号，或一个有效的 Overleaf session cookie。
+- Python 3.10+。
+
+ChatOL 不部署 Overleaf；如果还没有 Overleaf 服务，请先看 [部署与连接边界](overleaf-service-operations.md)。
+
+## 1. 安装
+
+从 PyPI 安装：
 
 ```bash
 python -m pip install -U ChatOL
 oleaf --version
 ```
 
-从源码调试：
+从源码安装：
 
 ```bash
 git clone https://github.com/ChatArch/ChatOL.git
 cd ChatOL
 python -m pip install -e ".[dev,docs]"
-python -m pytest -q
 ```
 
-## 2. 配置 Overleaf 连接
+## 2. 配置连接
 
-ChatOL 支持两类凭据：
-
-1. 邮箱 + 密码：适合受控服务端连接验证或管理员维护脚本。
-2. 已有 session cookie：适合复用浏览器/服务端已有会话，但要注意过期和权限范围。
-
-### 方式 A：进程环境变量
+最直接的方式是使用环境变量：
 
 ```bash
 export OVERLEAF_SITE_URL="https://overleaf.example.com"
@@ -36,9 +38,15 @@ export OVERLEAF_ADMIN_PASSWORD="<password>"
 export OVERLEAF_HTTP_TIMEOUT=45
 ```
 
-### 方式 B：ChatEnv active profile
+如果你已经有浏览器或服务端会话，也可以使用 session cookie：
 
-ChatEnv target 是 `overleaf`，不是 `chatol`。
+```bash
+export OVERLEAF_SITE_URL="https://overleaf.example.com"
+export OVERLEAF_SESSION_COOKIE="<session-cookie>"
+export OVERLEAF_SESSION_COOKIE_NAME="overleaf_session2"
+```
+
+也可以通过 ChatEnv 保存当前环境的 `overleaf` profile：
 
 ```bash
 python -m chatenv.cli init -t overleaf -I
@@ -48,20 +56,25 @@ python -m chatenv.cli paste OVERLEAF_ADMIN_PASSWORD --stdin
 python -m chatenv.cli test -t overleaf -I
 ```
 
-真实密码和 session 应通过私有 profile、环境变量或 stdin 传入，不要写进 shell history、README、issue 或 PR。
+不要把真实密码、cookie、token 或内部项目 ID 写进 shell history、README、issue 或 PR。
 
-## 3. 验证连接
+## 3. 检查连接
 
 ```bash
 oleaf doctor --json
+```
+
+`doctor` 会检查当前配置能否访问项目列表。它不会修改 Overleaf 项目。
+
+如果成功，可以继续列出项目：
+
+```bash
 oleaf projects list --json
 ```
 
-`doctor` 会验证登录和项目列表访问，并返回可见项目数量。它不会修改 Overleaf 项目。
+## 4. 编译项目
 
-## 4. 编译一个项目
-
-项目参数可以是项目名或项目 ID。项目名精确匹配；如果同名项目会造成歧义，优先使用项目 ID。
+项目参数可以是项目名或项目 ID。自动化脚本中建议优先使用项目 ID，避免同名项目造成歧义。
 
 ```bash
 oleaf projects info "<project-name>" --json
@@ -70,21 +83,45 @@ oleaf compile pdf "<project-name>" -o output.pdf --json
 oleaf compile output "<project-name>" log -o output.log --json
 ```
 
-## 5. Python 调用
+## 5. 拉取和上传文件
 
-CLI 背后是 `chatol.workflows` 和 `chatol.client.OverleafClient`。
+把 Overleaf 项目拉到本地目录：
+
+```bash
+oleaf files pull "<project-name>" ./source --json
+```
+
+修改本地文件后，上传一个根目录文件：
+
+```bash
+oleaf files upload "<project-name>" ./source/main.tex --remote-path main.tex --json
+```
+
+删除远端文件需要显式确认：
+
+```bash
+oleaf files delete "<project-name>" old-note.tex --apply --json
+```
+
+更多说明见 [Agent 任务闭环](agent-overleaf-flow.md)。
+
+## 6. Python 调用
 
 ```python
 from pathlib import Path
 from chatol.workflows import compile_project, download_pdf, list_projects
 
 projects = list_projects()
-project, result = compile_project(projects[0].name)
-pdf_path = download_pdf(project.name, Path("output.pdf"))
+project, result = compile_project(projects[0].id)
+pdf_path = download_pdf(project.id, Path("output.pdf"))
 ```
 
-## 当前边界
+## 常见问题
 
-- 已实现：登录/session、项目列表、项目信息、编译、PDF 下载、compile output 下载、项目 zip 拉取、本地 pull、根目录单文件上传和受保护单文件删除。
-- 未实现：嵌套目录上传、双向同步、评论、管理员和用户管理。
-- 变更性操作后续必须默认 dry-run 或要求显式 `--apply`。
+| 问题 | 处理方式 |
+| --- | --- |
+| `doctor` 无法登录 | 检查 `OVERLEAF_SITE_URL`、账号密码、cookie 名称和 cookie 是否过期 |
+| 项目名找不到 | 先用 `oleaf projects list --json` 确认名称；脚本中优先使用项目 ID |
+| 拉取目录已有文件 | 默认不会覆盖；确认安全后加 `--force` |
+| 上传嵌套路径失败 | 当前只支持根目录单文件上传 |
+| 删除文件失败 | 确认路径是文件而不是文件夹，并且命令包含 `--apply` |

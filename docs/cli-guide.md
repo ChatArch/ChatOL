@@ -103,12 +103,12 @@ oleaf files upload "<project-name>" ./source/main.tex --remote-path main.tex --j
 oleaf files delete "<project-name>" old-note.tex --apply --json
 ```
 
-当前第一版文件能力服务 Agent 编译闭环：先拉取项目，再由 Agent 修改本地文件，最后上传明确选择的根目录文件。它不是完整同步器：
+文件命令适合“拉取源码、修改本地文件、上传明确选择的文件”这种工作流。它不是完整同步器：
 
 - `files pull` 默认拒绝覆盖已有文件，覆盖必须显式 `--force`。
 - `files pull` 会拒绝 zip-slip 路径逃逸。
-- `files upload` 当前只支持项目根目录文件；嵌套目录上传、自动建目录、重命名、完整同步仍是后续增量。
-- `files delete` 当前只按路径删除 `doc`/`file`，不删除文件夹，并且必须显式 `--apply`。
+- `files upload` 只支持项目根目录文件；不要传包含 `/` 的远端路径。
+- `files delete` 按路径删除 `doc`/`file`，不删除文件夹，并且必须显式 `--apply`。
 - 项目页缺失 `rootFolder` metadata 时，ChatOL 会使用 Socket.IO 项目树回退解析来获取根目录和文件 ID。
 - `files list` 依赖自托管 Overleaf 暴露 `/project/{project_id}/entities`；不支持时会明确返回“不支持”。
 
@@ -151,4 +151,4 @@ OverleafClient.compile       -> POST /project/{project_id}/compile
 - JSON 默认不输出内部编译 URL、项目所有者/更新者元数据。
 - 产物下载拒绝跨源 URL。
 - 不要把真实 URL、邮箱、cookie、token、build URL、项目 ID 或用户 ID 写进公开输出、文档、issue 或 PR 评论。
-- 当前只实现根目录单文件上传和受保护单文件删除；重命名、完整同步、管理员和用户管理尚未实现，未来必须默认 dry-run 或显式 `--apply`。
+- 根目录单文件上传和受保护单文件删除可直接使用；重命名、完整同步、管理员和用户管理不在这组命令里。

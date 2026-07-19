@@ -16,7 +16,7 @@ Agent / script
   -> Overleaf compile backend
 ```
 
-`OVERLEAF_SITE_URL` 应指向 Agent 能访问的 Overleaf Web 入口：可以是服务端 loopback、内网地址，也可以是经过 TLS/nginx 的公开入口。文档和报告里不要写真实生产域名。
+`OVERLEAF_SITE_URL` 应指向 Agent 能访问的 Overleaf Web 入口：可以是服务端 loopback、内网地址，也可以是经过 TLS/nginx 的公开入口。不要把真实生产域名写进公开文档或公开日志。
 
 ## ChatOL 配置边界
 
@@ -38,7 +38,7 @@ OVERLEAF_HTTP_TIMEOUT          # HTTP timeout 秒数
 - 密码和 session cookie 不应作为普通命令参数出现。
 - 推荐使用 ChatEnv private profile、进程环境变量、`--password-stdin` 或 `--session-stdin`。
 - `chatenv cat -t overleaf` 应只显示 masked 敏感字段。
-- 报告、截图、CI log 和 issue/PR 评论里要脱敏真实 URL、邮箱、cookie、token、项目 ID 和 build URL。
+- 公开输出里要脱敏真实 URL、邮箱、cookie、token、项目 ID 和 build URL。
 
 ## 内网和公网入口
 
@@ -55,7 +55,7 @@ oleaf doctor --json
 
 - CLI JSON 默认不输出内部编译 URL、项目所有者/更新者元数据。
 - 编译产物下载会拒绝跨源 URL，避免把认证头或 cookie 发给非 Overleaf 主机。
-- 变更类能力尚未实现；未来文件删除、同步上传、管理员操作必须默认 dry-run 或要求显式 `--apply`。
+- 删除、同步上传、管理员操作必须默认 dry-run 或要求显式 `--apply`。
 
 ## 运维检查清单
 
@@ -65,4 +65,4 @@ oleaf doctor --json
 | Agent 网络路径 | 确认运行 `oleaf` 的机器能访问 `OVERLEAF_SITE_URL` |
 | 凭据来源 | 使用 private env/profile/stdin，不写入仓库 |
 | 编译能力 | 用小项目跑 `oleaf compile run` 和 `oleaf compile output ... log` |
-| 日志脱敏 | 报告只保留 count/status/bytes 等摘要 |
+| 输出脱敏 | 公开输出不要包含真实 URL、cookie、token、项目 ID 或 build URL |
