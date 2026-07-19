@@ -16,6 +16,12 @@ oleaf
 ├── projects                  # 项目发现
 │   ├── list                  # 列出当前会话可见项目
 │   └── info <project>        # 按项目名或 ID 解析项目
+├── files                     # 文件和项目归档
+│   ├── list <project>        # 列出文件实体，依赖实例支持 /entities
+│   ├── zip <project>         # 下载项目 zip
+│   ├── pull <project> <dir>  # 下载并安全解压项目 zip
+│   ├── upload <project>      # 上传一个本地文件到项目根目录
+│   └── delete <project>      # 删除一个远端文件，必须 --apply
 └── compile                   # 编译和产物下载
     ├── run <project>         # 触发编译并输出 metadata
     ├── pdf <project>         # 编译并下载 PDF
@@ -31,9 +37,10 @@ ChatOL 命令应是薄 Click 包装层。每个实质命令都调用一个可导
 ```python
 from pathlib import Path
 from chatol.client import OverleafClient
-from chatol.workflows import compile_project, download_output, download_pdf, list_projects
+from chatol.workflows import compile_project, download_output, download_pdf, list_projects, pull_project
 
 projects = list_projects()
+files = pull_project(projects[0].name, Path("source"))
 project, compile_result = compile_project(projects[0].name)
 pdf = download_pdf(project.name, Path("output.pdf"))
 log = download_output(project.name, "log", Path("output.log"))
@@ -85,6 +92,26 @@ oleaf projects info "<project-id>" --json
 
 `projects list` 默认过滤 archived 和 trashed 项目。`projects info` 支持项目名或项目 ID；自动化中如果能拿到 ID，优先用 ID。
 
+## 文件和项目归档
+
+```bash
+oleaf files list "<project-name>" --json
+oleaf files zip "<project-name>" -o project.zip --json
+oleaf files pull "<project-name>" ./source --json
+oleaf files pull "<project-name>" ./source --force --json
+oleaf files upload "<project-name>" ./source/main.tex --remote-path main.tex --json
+oleaf files delete "<project-name>" chatol-agent-practice.tex --apply --json
+```
+
+当前第一版文件能力服务 Agent 编译闭环：先拉取项目，再由 Agent 修改本地文件，最后上传明确选择的根目录文件。它不是完整同步器：
+
+- `files pull` 默认拒绝覆盖已有文件，覆盖必须显式 `--force`。
+- `files pull` 会拒绝 zip-slip 路径逃逸。
+- `files upload` 当前只支持项目根目录文件；嵌套目录上传、自动建目录、rename/full sync 仍是后续增量。
+- `files delete` 当前只按路径删除 `doc`/`file`，不删除 folder，并且必须显式 `--apply`。
+- 项目页缺失 `rootFolder` metadata 时，ChatOL 会使用 Socket.IO project tree fallback 解析 root folder 和文件 id。
+- `files list` 依赖 self-hosted Overleaf 暴露 `/project/{project_id}/entities`；不支持时会明确报 unsupported。
+
 ## 编译和产物
 
 ```bash
@@ -101,12 +128,20 @@ oleaf compile output "<project-name>" log -o output.log --json
 oleaf doctor                 -> chatol.workflows.client_from_env + OverleafClient.list_projects
 oleaf projects list          -> chatol.workflows.list_projects
 oleaf projects info          -> chatol.workflows.get_project
+oleaf files list             -> chatol.workflows.list_files
+oleaf files zip              -> chatol.workflows.download_project_zip
+oleaf files pull             -> chatol.workflows.pull_project
+oleaf files upload           -> chatol.workflows.upload_file
+oleaf files delete           -> chatol.workflows.delete_file
 oleaf compile run            -> chatol.workflows.compile_project
 oleaf compile pdf            -> chatol.workflows.download_pdf
 oleaf compile output         -> chatol.workflows.download_output
 
 OverleafClient.from_password -> GET/POST /login, then GET /project
 OverleafClient.list_projects -> GET /project and parse embedded project metadata
+OverleafClient.files zip     -> GET /project/{project_id}/download/zip
+OverleafClient.files upload  -> GET /project/{project_id} or Socket.IO tree, then POST /project/{project_id}/upload
+OverleafClient.files delete  -> GET /project/{project_id}/entities + project tree, then DELETE /project/{project_id}/{type}/{id}
 OverleafClient.compile       -> POST /project/{project_id}/compile
 ```
 
@@ -116,4 +151,4 @@ OverleafClient.compile       -> POST /project/{project_id}/compile
 - JSON 默认不输出内部 compile URL、owner/updater metadata。
 - artifact 下载拒绝 cross-origin URL。
 - 报告、issue、PR 评论和截图里必须脱敏真实 URL、邮箱、cookie、token、build URL、项目/user ID。
-- 文件 mutation、sync、admin/user management 尚未实现；未来必须默认 dry-run 或显式 `--apply`。
+- 当前只实现单文件 root 上传和受保护单文件删除；rename/full sync/admin/user management 尚未实现，未来必须默认 dry-run 或显式 `--apply`。

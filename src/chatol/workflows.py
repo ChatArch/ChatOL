@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import os
 import time
+import zipfile
+from io import BytesIO
 from pathlib import Path
 from typing import Callable, Iterable
 
@@ -12,7 +14,7 @@ from chatenv import EnvStore, get_paths
 from chatol.client import DEFAULT_COOKIE_NAME, OverleafClient
 from chatol.config import OverleafConfig
 from chatol.errors import CompileError
-from chatol.models import CompileResult, Project
+from chatol.models import CompileResult, Project, ProjectFile, UploadResult
 
 SleepFn = Callable[[float], None]
 
@@ -69,6 +71,80 @@ def get_project(project: str, client: OverleafClient | None = None, **client_kwa
 
     active_client = client or client_from_env(**client_kwargs)  # type: ignore[arg-type]
     return active_client.get_project(project)
+
+
+def list_files(project: str, client: OverleafClient | None = None, **client_kwargs: object) -> list[ProjectFile]:
+    """List files for a project."""
+
+    active_client = client or client_from_env(**client_kwargs)  # type: ignore[arg-type]
+    resolved = active_client.get_project(project)
+    return active_client.list_files(resolved.id)
+
+
+def download_project_zip(
+    project: str,
+    output_path: str | Path,
+    *,
+    client: OverleafClient | None = None,
+    **client_kwargs: object,
+) -> Path:
+    """Download the full Overleaf project archive to a zip file."""
+
+    active_client = client or client_from_env(**client_kwargs)  # type: ignore[arg-type]
+    resolved = active_client.get_project(project)
+    data = active_client.download_project_zip(resolved.id)
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    return path
+
+
+def pull_project(
+    project: str,
+    output_dir: str | Path,
+    *,
+    force: bool = False,
+    client: OverleafClient | None = None,
+    **client_kwargs: object,
+) -> list[Path]:
+    """Download and safely extract an Overleaf project archive."""
+
+    active_client = client or client_from_env(**client_kwargs)  # type: ignore[arg-type]
+    resolved = active_client.get_project(project)
+    data = active_client.download_project_zip(resolved.id)
+    target = Path(output_dir)
+    target.mkdir(parents=True, exist_ok=True)
+    return _extract_zip(data, target, force=force)
+
+
+def upload_file(
+    project: str,
+    local_path: str | Path,
+    *,
+    remote_path: str | None = None,
+    client: OverleafClient | None = None,
+    **client_kwargs: object,
+) -> UploadResult:
+    """Upload one local file to the Overleaf project root."""
+
+    active_client = client or client_from_env(**client_kwargs)  # type: ignore[arg-type]
+    resolved = active_client.get_project(project)
+    path = Path(local_path)
+    return active_client.upload_file(resolved.id, path.read_bytes(), remote_path or path.name)
+
+
+def delete_file(
+    project: str,
+    remote_path: str,
+    *,
+    client: OverleafClient | None = None,
+    **client_kwargs: object,
+) -> ProjectFile:
+    """Delete one remote project file by path."""
+
+    active_client = client or client_from_env(**client_kwargs)  # type: ignore[arg-type]
+    resolved = active_client.get_project(project)
+    return active_client.delete_file(resolved.id, remote_path)
 
 
 def compile_project(
@@ -164,6 +240,25 @@ def _retry_bytes(
                 raise
     assert last_error is not None
     raise last_error
+
+
+def _extract_zip(data: bytes, output_dir: Path, *, force: bool) -> list[Path]:
+    extracted: list[Path] = []
+    output_root = output_dir.resolve()
+    with zipfile.ZipFile(BytesIO(data)) as archive:
+        for member in archive.infolist():
+            name = member.filename
+            if not name or name.endswith("/"):
+                continue
+            target = (output_root / name).resolve()
+            if output_root not in target.parents and target != output_root:
+                raise ValueError(f"Refusing unsafe zip path: {name}")
+            if target.exists() and not force:
+                raise FileExistsError(f"Refusing to overwrite existing file without force: {target}")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(archive.read(member))
+            extracted.append(target)
+    return extracted
 
 
 def _load_active_chatenv(chatarch_home: str | Path | None) -> dict[str, str]:

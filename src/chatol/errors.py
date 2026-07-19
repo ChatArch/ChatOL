@@ -31,6 +31,12 @@ class ProjectNotFoundError(ChatOLError):
     code = "project_not_found"
 
 
+class FileOperationError(ChatOLError):
+    """Raised when an Overleaf file operation fails."""
+
+    code = "file_operation_failed"
+
+
 class CompileError(ChatOLError):
     """Raised when Overleaf returns a non-success compile status."""
 

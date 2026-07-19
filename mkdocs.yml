@@ -42,6 +42,8 @@ plugins:
             论文编译 Flow: Paper Compile Flow
             编译与产物: Compile and Artifacts
             真实实践: Live Practice
+            Agent 任务闭环: Agent Task Loop
+            olcli 对照参考: olcli Reference
             CLI / API: CLI / API
             CLI 实战指南: CLI Guide
             Python 接口树: Python Interface Tree
@@ -64,10 +66,12 @@ nav:
       - 部署与连接边界: overleaf-service-operations.md
   - 论文编译 Flow:
       - 编译与产物: compile-flow-quickstart.md
+      - Agent 任务闭环: agent-overleaf-flow.md
       - 真实实践: live-practice.md
   - CLI / API:
       - CLI 实战指南: cli-guide.md
       - Python 接口树: interface-tree.md
       - CLI 能力地图: chatol-cli-tree.md
+      - olcli 对照参考: olcli-comparison.md
   - 路线图:
       - 开发计划: development-plan.md

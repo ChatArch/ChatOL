@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Added `oleaf files list`, `files zip`, `files pull`, `files upload`, and guarded `files delete --apply` for the first Agent-oriented Overleaf file loop.
+- Added importable file workflow APIs: `list_files`, `download_project_zip`, `pull_project`, `upload_file`, and `delete_file`.
+- Added live-practiced documentation for the Overleaf Agent task loop and an `olcli` capability comparison.
+
+### Fixed
+
+- Added Socket.IO project tree fallback for Overleaf instances that no longer expose `rootFolder` metadata in project HTML.
+
 ## 0.1.1 - 2026-07-16
 
 ### Added

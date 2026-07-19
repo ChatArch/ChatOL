@@ -11,7 +11,19 @@ import click
 
 from chatol import __version__
 from chatol.errors import ChatOLError
-from chatol.workflows import client_from_env, compile_project, download_output, download_pdf, get_project, list_projects
+from chatol.workflows import (
+    client_from_env,
+    compile_project,
+    delete_file,
+    download_output,
+    download_pdf,
+    download_project_zip,
+    get_project,
+    list_files,
+    list_projects,
+    pull_project,
+    upload_file,
+)
 
 
 @click.group(name="oleaf")
@@ -86,6 +98,94 @@ def projects_info(ctx: click.Context, project: str, as_json: bool) -> None:
     try:
         resolved = get_project(project, **_client_kwargs(ctx))
         _emit(resolved.to_dict(), as_json=as_json)
+    except Exception as exc:  # noqa: BLE001
+        _handle_error(exc, as_json=as_json)
+
+
+@main.group()
+def files() -> None:
+    """Project file and archive commands."""
+
+
+@files.command("list")
+@click.argument("project")
+@click.option("--json", "--json-output", "as_json", is_flag=True, help="Output machine-readable JSON.")
+@click.pass_context
+def files_list(ctx: click.Context, project: str, as_json: bool) -> None:
+    """List file-like project entities when supported by the instance."""
+
+    try:
+        items = list_files(project, **_client_kwargs(ctx))
+        _emit([item.to_dict() for item in items], as_json=as_json)
+    except Exception as exc:  # noqa: BLE001
+        _handle_error(exc, as_json=as_json)
+
+
+@files.command("zip")
+@click.argument("project")
+@click.option("-o", "--output", required=True, type=click.Path(path_type=Path), help="Zip output path.")
+@click.option("--json", "--json-output", "as_json", is_flag=True, help="Output machine-readable JSON.")
+@click.pass_context
+def files_zip(ctx: click.Context, project: str, output: Path, as_json: bool) -> None:
+    """Download the full project zip archive."""
+
+    try:
+        path = download_project_zip(project, output, **_client_kwargs(ctx))
+        _emit({"ok": True, "output": str(path), "bytes": path.stat().st_size}, as_json=as_json)
+    except Exception as exc:  # noqa: BLE001
+        _handle_error(exc, as_json=as_json)
+
+
+@files.command("pull")
+@click.argument("project")
+@click.argument("output_dir", type=click.Path(path_type=Path, file_okay=False))
+@click.option("--force", is_flag=True, help="Overwrite existing local files.")
+@click.option("--json", "--json-output", "as_json", is_flag=True, help="Output machine-readable JSON.")
+@click.pass_context
+def files_pull(ctx: click.Context, project: str, output_dir: Path, force: bool, as_json: bool) -> None:
+    """Download and extract the full project archive."""
+
+    try:
+        paths = pull_project(project, output_dir, force=force, **_client_kwargs(ctx))
+        _emit(
+            {"ok": True, "output_dir": str(output_dir), "files": [str(path) for path in paths], "count": len(paths)},
+            as_json=as_json,
+        )
+    except Exception as exc:  # noqa: BLE001
+        _handle_error(exc, as_json=as_json)
+
+
+@files.command("upload")
+@click.argument("project")
+@click.argument("local_path", type=click.Path(path_type=Path, dir_okay=False, exists=True))
+@click.option("--remote-path", help="Remote filename. Nested paths are not implemented yet.")
+@click.option("--json", "--json-output", "as_json", is_flag=True, help="Output machine-readable JSON.")
+@click.pass_context
+def files_upload(ctx: click.Context, project: str, local_path: Path, remote_path: str | None, as_json: bool) -> None:
+    """Upload one local file to the project root."""
+
+    try:
+        result = upload_file(project, local_path, remote_path=remote_path, **_client_kwargs(ctx))
+        payload = {"ok": True, **result.to_dict()}
+        _emit(payload, as_json=as_json)
+    except Exception as exc:  # noqa: BLE001
+        _handle_error(exc, as_json=as_json)
+
+
+@files.command("delete")
+@click.argument("project")
+@click.argument("remote_path")
+@click.option("--apply", is_flag=True, help="Actually delete the remote file. Required.")
+@click.option("--json", "--json-output", "as_json", is_flag=True, help="Output machine-readable JSON.")
+@click.pass_context
+def files_delete(ctx: click.Context, project: str, remote_path: str, apply: bool, as_json: bool) -> None:
+    """Delete one remote file by path; requires --apply."""
+
+    try:
+        if not apply:
+            raise click.ClickException("Refusing to delete without --apply.")
+        deleted = delete_file(project, remote_path, **_client_kwargs(ctx))
+        _emit({"ok": True, "deleted": deleted.to_dict()}, as_json=as_json)
     except Exception as exc:  # noqa: BLE001
         _handle_error(exc, as_json=as_json)
 
