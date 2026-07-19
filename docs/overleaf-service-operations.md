@@ -61,7 +61,7 @@ oleaf doctor --json
 
 | 检查项 | 建议 |
 | --- | --- |
-| Overleaf 服务状态 | 先用浏览器或服务端 health/smoke 确认 Web 可登录 |
+| Overleaf 服务状态 | 先用浏览器或服务端健康检查确认 Web 可登录 |
 | Agent 网络路径 | 确认运行 `oleaf` 的机器能访问 `OVERLEAF_SITE_URL` |
 | 凭据来源 | 使用 private env/profile/stdin，不写入仓库 |
 | 编译能力 | 用小项目跑 `oleaf compile run` 和 `oleaf compile output ... log` |

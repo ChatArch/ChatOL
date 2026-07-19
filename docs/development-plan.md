@@ -9,7 +9,7 @@ ChatOL 开发遵循这些评审规则：
 - CLI 命令必须支持面向 Agent 的机器可读 JSON 输出。
 - 密钥不能作为位置参数传递；优先使用 stdin、环境变量或私有 profile 存储。
 - 破坏性操作必须默认只做 dry-run，或要求显式 `--apply`。
-- 真实实践报告必须脱敏邮箱、密码、session cookie、build URL、内部项目 ID 和用户 ID。
+- 公开文档、日志和 issue/PR 评论必须脱敏邮箱、密码、session cookie、build URL、内部项目 ID 和用户 ID。
 - 测试要同时覆盖可 import 函数和 CLI 包装层。
 
 ## 阶段 1：原生读取与编译核心
@@ -46,13 +46,13 @@ oleaf
 
 - 优先使用 Python 标准库 HTTP 能力，保持依赖面小。
 - 复用 Overleaf 官方配置命名：`OVERLEAF_SITE_URL` 和 `OVERLEAF_ADMIN_EMAIL` 来自 Overleaf 部署语义；ChatOL 补充字段如 `OVERLEAF_ADMIN_PASSWORD`、`OVERLEAF_SESSION_COOKIE`、`OVERLEAF_HTTP_TIMEOUT` 也放在同一命名空间，不增加 `CHATOL_*` 平行别名。
-- 从 Overleaf HTML meta 标签解析项目元数据，并参考 `olcli` 已验证的做法。
+- 从 Overleaf HTML meta 标签解析项目元数据。
 - CLI 默认不输出内部编译 URL。
 - 编译冷却和重试放在 workflow 函数里，不放在 CLI 调用者里。
 
 ## 阶段 2：文件操作
 
-PR #4 已补第一批 Agent 任务闭环所需的文件能力：
+当前已提供第一批 Agent 任务闭环所需的文件能力：
 
 ```text
 oleaf files
@@ -129,13 +129,13 @@ oleaf admin
 - 所有变更操作使用 dry-run 和幂等设计。
 - 输出审计事件时脱敏目标标识符。
 
-## 真实实践循环
+## 实现流程
 
 每个阶段按这个顺序推进：
 
 1. 增加或调整可 import Python API。
 2. 增加 CLI 薄封装。
 3. 增加 parser、client、workflow 的单元测试。
-4. 在 server-local Overleaf 入口跑 CLI smoke。
-5. 把脱敏实践记录保存到 `docs/` 或任务报告。
-6. 把实践发现回写到下一轮实现切片。
+4. 在受控 Overleaf 环境中验证新命令。
+5. 把验证记录保存到本地任务报告，不写入公开 MkDocs。
+6. 把验证发现回写到下一轮实现切片。

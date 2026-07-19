@@ -24,7 +24,7 @@ python -m pytest -q
 
 ChatOL 支持两类凭据：
 
-1. 邮箱 + 密码：适合受控的服务端 smoke 或管理员维护脚本。
+1. 邮箱 + 密码：适合受控服务端连接验证或管理员维护脚本。
 2. 已有 session cookie：适合复用浏览器/服务端已有会话，但要注意过期和权限范围。
 
 ### 方式 A：进程环境变量
@@ -48,9 +48,9 @@ python -m chatenv.cli paste OVERLEAF_ADMIN_PASSWORD --stdin
 python -m chatenv.cli test -t overleaf -I
 ```
 
-真实密码和 session 应通过 private profile、环境变量或 stdin 传入，不要写进 shell history、README、issue、PR 或报告。
+真实密码和 session 应通过私有 profile、环境变量或 stdin 传入，不要写进 shell history、README、issue 或 PR。
 
-## 3. 运行最小 smoke
+## 3. 验证连接
 
 ```bash
 oleaf doctor --json

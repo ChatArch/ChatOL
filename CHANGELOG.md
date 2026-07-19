@@ -6,7 +6,7 @@
 
 - Added `oleaf files list`, `files zip`, `files pull`, `files upload`, and guarded `files delete --apply` for the first Agent-oriented Overleaf file loop.
 - Added importable file workflow APIs: `list_files`, `download_project_zip`, `pull_project`, `upload_file`, and `delete_file`.
-- Added live-practiced documentation for the Overleaf Agent task loop and an `olcli` capability comparison.
+- Added public documentation for the Overleaf Agent task loop and file workflow commands.
 
 ### Fixed
 
@@ -19,7 +19,7 @@
 - Added a native Python Overleaf client for login/session bootstrap, project listing, project resolution, compile, PDF download, and compile output download.
 - Added importable workflow functions backing the CLI: `client_from_env`, `list_projects`, `get_project`, `compile_project`, `download_pdf`, and `download_output`.
 - Added CLI commands under the default `oleaf` command: `doctor`, `projects list`, `projects info`, `compile run`, `compile pdf`, and `compile output`.
-- Added development plan and live-practice documentation for the first server-side Overleaf smoke.
+- Added development plan documentation and a server-side Overleaf connection guide.
 
 ### Changed
 

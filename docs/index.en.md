@@ -8,8 +8,8 @@ ChatOL is ChatArch's Overleaf workflow CLI/API package. It targets self-hosted O
 | --- | --- |
 | Install ChatOL, configure an Overleaf connection, and run `oleaf doctor` | [Installation and Configuration](overleaf-quickstart.md) |
 | Understand self-hosted Overleaf deployment, Docker/Toolkit, local/public endpoints, and connection boundaries | [Deployment and Connectivity Boundaries](overleaf-service-operations.md) |
-| Let an agent compile a paper, download a PDF, or read compile logs | [Compile and Artifacts](compile-flow-quickstart.md) |
-| Review the redacted server-side smoke result | [Live Practice](live-practice.md) |
+| Let an agent pull, edit, upload, and compile an Overleaf project | [Agent Task Loop](agent-overleaf-flow.md) |
+| Compile a paper, download a PDF, or read compile logs | [Compile and Artifacts](compile-flow-quickstart.md) |
 | Check current CLI commands, parameters, safety rules, and examples | [CLI Guide](cli-guide.md) |
 | Call ChatOL directly from Python | [Python Interface Tree](interface-tree.md) |
 | See the implemented and planned CLI capability map | [CLI Capability Map](chatol-cli-tree.md) |
@@ -19,11 +19,11 @@ ChatOL is ChatArch's Overleaf workflow CLI/API package. It targets self-hosted O
 
 The site borrows ChatTea's MkDocs setup layer: grouped navigation, scenario-based entry points, Flow pages, suffix-based i18n, and language switching. The actual sections are ChatOL-specific and follow the current Overleaf workflow surface instead of copying ChatTea's Gitea/Runner/Actions categories.
 
-- **Quickstart**: implemented. Install ChatOL, configure ChatEnv/process env values, and run the minimum Overleaf smoke.
+- **Quickstart**: install ChatOL, configure ChatEnv/process env values, and verify the Overleaf connection.
 - **Overleaf Connectivity**: explored. Document self-hosted Overleaf deployment shape, endpoints, credentials, and safety boundaries; ChatOL itself is not a deployer.
-- **Paper Compile Flow**: implemented and live-practiced. Covers project discovery, compilation, PDF/log downloads, and log feedback boundaries.
-- **CLI / API**: partially implemented. Documents the current `oleaf` command tree and `chatol` Python API mapping.
-- **Roadmap**: planned-only capabilities stay marked as not implemented; they should become operation docs only after implementation, tests, and live practice.
+- **Paper Compile Flow**: covers project pull, root-file upload, compilation, PDF/log downloads, and log feedback boundaries.
+- **CLI / API**: documents the current `oleaf` command tree and `chatol` Python API mapping.
+- **Roadmap**: records planned capabilities and safety requirements.
 
 ## CLI
 
@@ -41,6 +41,12 @@ oleaf
 ├── projects
 │   ├── list
 │   └── info <project>
+├── files
+│   ├── list <project>
+│   ├── zip <project> -o <zip>
+│   ├── pull <project> <dir> [--force]
+│   ├── upload <project> <local-path> [--remote-path <name>]
+│   └── delete <project> <remote-path> --apply
 └── compile
     ├── run <project>
     ├── pdf <project> -o <path>

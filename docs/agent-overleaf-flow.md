@@ -1,78 +1,101 @@
 # Agent 使用 Overleaf 的任务闭环
 
-这篇文档把 ChatOL 当前要推进的 Overleaf 形态定为一个任务闭环：本地任务目录承载 Agent 修改，Overleaf 承载远端编译与协作，ChatOL 负责同步、编译、产物拉取和反馈。
+这篇文档说明如何用 ChatOL 把 Overleaf 项目接入本地 Agent 工作流。核心思路是：从 Overleaf 拉取项目源码到本地任务目录，Agent 只修改本地文件，然后把明确选择的文件上传回 Overleaf，再触发远端编译并下载产物。
 
-## 当前目标
-
-```text
-任务闭环
-├── 拉取：从 Overleaf 拉取项目 zip 到本地任务目录
-├── 编辑：Agent 在本地修改 LaTeX / bib / assets
-├── 上传：把明确选择的文件上传回 Overleaf
-├── 编译：触发 Overleaf 编译
-├── 收集：拉回 PDF 与 log/bbl/aux 等产物
-└── 反馈：把编译状态、log 摘要、产物路径返回给 Agent
-```
-
-## 第一版已实现能力
-
-| 环节 | CLI | Python API | 状态 |
-| --- | --- | --- | --- |
-| 项目发现 | `oleaf projects list/info` | `list_projects`, `get_project` | 已实现，已真实验证 |
-| 拉取 zip | `oleaf files zip <project> -o <zip>` | `download_project_zip` | 已实现，已真实验证 |
-| 拉取并解压 | `oleaf files pull <project> <dir>` | `pull_project` | 已实现，已真实验证 |
-| 单文件上传 | `oleaf files upload <project> <file>` | `upload_file` | 已实现，已真实验证；当前仅根目录 |
-| 单文件删除 | `oleaf files delete <project> <path> --apply` | `delete_file` | 已实现，已真实验证；必须显式使用 `--apply` |
-| 编译 | `oleaf compile run <project>` | `compile_project` | 已实现，已真实验证 |
-| PDF | `oleaf compile pdf <project> -o <pdf>` | `download_pdf` | 已实现，已真实验证 |
-| 编译产物 | `oleaf compile output <project> log -o <log>` | `download_output` | 已实现，已真实验证 |
-
-## 推荐任务目录
+## 工作流
 
 ```text
-<task-dir>/
-├── source/              # files pull 解压后的项目源码
-├── artifacts/           # PDF/log/bbl/aux 等编译产物
-├── reports/             # 任务总结、编译诊断、变更记录
-└── TASK.md              # 任务目标和敏感信息边界
+本地任务目录
+├── source/      # 从 Overleaf 拉取的源码
+├── artifacts/   # PDF、log、bbl、aux 等编译产物
+└── notes/       # 本地任务说明或诊断记录，不上传到 Overleaf
 ```
 
-## 命令流程
+推荐流程：
+
+1. 用 `files pull` 获取远端项目源码；
+2. Agent 在 `source/` 内修改 LaTeX、bib 或资源文件；
+3. 用 `files upload` 上传明确选择的根目录文件；
+4. 用 `compile run` 触发 Overleaf 编译；
+5. 用 `compile pdf` 和 `compile output` 下载 PDF 与日志；
+6. 根据日志继续修改，直到编译结果满足任务要求。
+
+## 拉取项目源码
 
 ```bash
-# 1. 拉取远端项目源码
 oleaf files pull "<project-name>" ./source --json
+```
 
-# 2. Agent 修改本地文件，例如 source/main.tex
-#    当前第一版不做全量同步；只上传明确选择的文件。
+默认情况下，`files pull` 不会覆盖本地已有文件。如果确认要刷新本地源码，显式使用 `--force`：
 
-# 3. 上传单个文件到 Overleaf 项目根目录
+```bash
+oleaf files pull "<project-name>" ./source --force --json
+```
+
+`files pull` 会检查 zip 内路径，拒绝解压会逃逸到目标目录外的文件。
+
+## 上传单个文件
+
+当前第一版只支持上传到 Overleaf 项目根目录，适合修改 `main.tex`、`sample.bib` 这类根目录文件：
+
+```bash
 oleaf files upload "<project-name>" ./source/main.tex --remote-path main.tex --json
+```
 
-# 可选：清理专门的实践文件；删除必须显式 --apply
-oleaf files delete "<project-name>" chatol-agent-practice.tex --apply --json
+注意：
 
-# 4. 编译并收集产物
+- `--remote-path` 目前应是根目录文件名，不应包含 `/`。
+- 上传命令不是完整同步器，不会自动比较目录差异。
+- 嵌套目录上传、自动建目录和批量同步属于后续能力。
+
+## 删除单个文件
+
+删除是受保护操作，必须显式传入 `--apply`。只在明确知道远端路径时使用：
+
+```bash
+oleaf files delete "<project-name>" old-note.tex --apply --json
+```
+
+当前删除能力只处理 `doc`/`file` 实体，不删除文件夹。建议删除后运行：
+
+```bash
+oleaf files list "<project-name>" --json
+```
+
+用返回结果确认目标文件已经不存在。
+
+## 编译并下载产物
+
+```bash
 oleaf compile run "<project-name>" --json
 oleaf compile pdf "<project-name>" -o ./artifacts/output.pdf --json
 oleaf compile output "<project-name>" log -o ./artifacts/output.log --json
 ```
 
+`compile pdf` 和 `compile output` 会在 workflow 层处理 Overleaf 编译冷却和可重试错误。默认 JSON 输出不会暴露内部编译 URL。
+
+## Python 调用
+
+同一套能力也可以直接从 Python 调用：
+
+```python
+from pathlib import Path
+from chatol.workflows import compile_project, download_output, download_pdf, pull_project, upload_file
+
+project_name = "<project-name>"
+
+pull_project(project_name, Path("source"))
+upload_file(project_name, Path("source/main.tex"), remote_path="main.tex")
+compile_project(project_name)
+download_pdf(project_name, Path("artifacts/output.pdf"))
+download_output(project_name, "log", Path("artifacts/output.log"))
+```
+
 ## 安全边界
 
-- 第一版 `files upload` 只支持项目根目录文件；嵌套目录、自动建目录、全量上传/同步暂不实现。
-- 第一版 `files delete` 只按文件路径删除 `doc`/`file`，必须显式 `--apply`；不删除文件夹。
-- `files pull` 默认不覆盖本地已有文件；需要覆盖时必须显式 `--force`。
-- `files pull` 做 zip-slip 路径保护，拒绝解压逃逸到目标目录外的路径。
-- 当项目 HTML 不暴露 `rootFolder` 时，ChatOL 会通过 Socket.IO 项目树回退解析来获取根目录和文件 ID。
-- 编译产物 URL 不出现在默认 JSON 输出里；报告不能保存内部 build URL。
-- 密码、session cookie、真实 Overleaf 公网域名不写入文档、报告、issue 或 PR 评论。
-
-## 后续增量
-
-1. 增加 `files download <project> <remote-path>`，用于拉单个文件。
-2. 增加 `files tree <project>` 或增强 `files list`，兼容没有 `/entities` 的实例。
-3. 增加嵌套目录上传：目录树发现、缺失目录创建、重复文件覆盖规则。
-4. 增加 `sync plan`：只生成同步计划，不写远端。
-5. 增加 `sync push --apply`：需要显式 apply，删除默认关闭。
-6. 增加编译日志诊断，把 LaTeX 错误摘要成 Agent 可执行反馈。
+- 密码、session cookie、真实服务 URL 和内部 build URL 不应写入仓库或公开文档。
+- `files pull` 默认不覆盖本地文件；覆盖必须显式 `--force`。
+- `files upload` 当前只支持根目录单文件上传。
+- `files delete` 必须显式 `--apply`，且不删除文件夹。
+- 当 Overleaf 项目页缺少 `rootFolder` 元数据时，ChatOL 会通过 Socket.IO 项目树解析根目录和文件 ID。
+- ChatOL 目前不是完整同步器；批量同步应等 `sync plan` 和显式 `sync push --apply` 能力完成后再使用。

@@ -10,8 +10,8 @@ ChatOL 是 ChatArch 的 Overleaf 工作流 CLI/API 包。它面向自托管 Over
 | --- | --- |
 | 第一次安装、配置 Overleaf 连接并跑通 `oleaf doctor` | [安装与配置](overleaf-quickstart.md) |
 | 了解自托管 Overleaf、Docker/Toolkit、内网入口和连接边界 | [部署与连接边界](overleaf-service-operations.md) |
-| 让 Agent 编译论文、下载 PDF 或读取日志 | [编译与产物](compile-flow-quickstart.md) |
-| 查看真实服务器 smoke 的脱敏结果 | [真实实践](live-practice.md) |
+| 让 Agent 拉取、修改、上传并编译 Overleaf 项目 | [Agent 任务闭环](agent-overleaf-flow.md) |
+| 编译论文、下载 PDF 或读取日志 | [编译与产物](compile-flow-quickstart.md) |
 | 查当前 CLI 命令、参数、安全约束和示例 | [CLI 实战指南](cli-guide.md) |
 | 从 Python 代码直接调用 ChatOL | [Python 接口树](interface-tree.md) |
 | 快速看已实现/未实现的 CLI 能力边界 | [CLI 能力地图](chatol-cli-tree.md) |
@@ -21,11 +21,11 @@ ChatOL 是 ChatArch 的 Overleaf 工作流 CLI/API 包。它面向自托管 Over
 
 当前文档借鉴 ChatTea 的 MkDocs 设定层：分栏导航、场景入口、Flow 页面、中英文 suffix i18n 和语言切换；栏目本身按 ChatOL 的真实能力拆分，不照抄 ChatTea 的 Gitea/Runner/Actions 分类。
 
-- **快速开始**：已实现。安装 ChatOL、配置 ChatEnv/环境变量、跑通最小 Overleaf smoke。
+- **快速开始**：安装 ChatOL、配置 ChatEnv/环境变量，并验证 Overleaf 连接。
 - **Overleaf 连接**：已探索。记录自托管 Overleaf 的部署形态、连接入口、凭据和安全边界；ChatOL 本身不是部署器。
-- **论文编译 Flow**：已实现且已做真实实践。覆盖项目发现、编译、PDF/log 产物下载和日志反馈边界。
-- **CLI / API**：已实现部分。记录当前 `oleaf` 命令树和 `chatol` Python API 映射。
-- **路线图**：未实现能力只放规划和保护要求；等真实实现、测试和真实实践后，再升级成操作文档。
+- **论文编译 Flow**：说明项目拉取、单文件上传、编译、PDF/log 产物下载和日志反馈边界。
+- **CLI / API**：记录当前 `oleaf` 命令树和 `chatol` Python API 映射。
+- **路线图**：记录未实现能力的规划和保护要求。
 
 ## CLI
 
@@ -43,6 +43,12 @@ oleaf
 ├── projects
 │   ├── list
 │   └── info <project>
+├── files
+│   ├── list <project>
+│   ├── zip <project> -o <zip>
+│   ├── pull <project> <dir> [--force]
+│   ├── upload <project> <local-path> [--remote-path <name>]
+│   └── delete <project> <remote-path> --apply
 └── compile
     ├── run <project>
     ├── pdf <project> -o <path>

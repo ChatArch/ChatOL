@@ -1,6 +1,6 @@
 # ChatOL CLI 实战指南
 
-这篇指南是当前 ChatOL Overleaf 能力面的实用 CLI 地图。它覆盖已实现命令树、每个命令背后的 Python API，以及来自自托管 Overleaf smoke 的脱敏实践边界。
+这篇指南说明 `oleaf` 的主要命令、参数、安全边界，以及每个命令背后的 Python API。它面向自托管 Overleaf 的日常项目发现、文件拉取、单文件上传、编译和产物下载。
 
 ## 当前 CLI 树
 
@@ -100,7 +100,7 @@ oleaf files zip "<project-name>" -o project.zip --json
 oleaf files pull "<project-name>" ./source --json
 oleaf files pull "<project-name>" ./source --force --json
 oleaf files upload "<project-name>" ./source/main.tex --remote-path main.tex --json
-oleaf files delete "<project-name>" chatol-agent-practice.tex --apply --json
+oleaf files delete "<project-name>" old-note.tex --apply --json
 ```
 
 当前第一版文件能力服务 Agent 编译闭环：先拉取项目，再由 Agent 修改本地文件，最后上传明确选择的根目录文件。它不是完整同步器：
@@ -150,5 +150,5 @@ OverleafClient.compile       -> POST /project/{project_id}/compile
 - 密码和 session cookie 不作为普通命令参数传递。
 - JSON 默认不输出内部编译 URL、项目所有者/更新者元数据。
 - 产物下载拒绝跨源 URL。
-- 报告、issue、PR 评论和截图里必须脱敏真实 URL、邮箱、cookie、token、build URL、项目 ID 和用户 ID。
+- 不要把真实 URL、邮箱、cookie、token、build URL、项目 ID 或用户 ID 写进公开输出、文档、issue 或 PR 评论。
 - 当前只实现根目录单文件上传和受保护单文件删除；重命名、完整同步、管理员和用户管理尚未实现，未来必须默认 dry-run 或显式 `--apply`。
