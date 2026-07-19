@@ -1,6 +1,6 @@
 # ChatOL CLI 实战指南
 
-这篇指南是当前 ChatOL Overleaf 能力面的实用 CLI 地图。它覆盖已实现命令树、每个命令背后的 Python API，以及来自 self-hosted Overleaf smoke 的脱敏实践边界。
+这篇指南是当前 ChatOL Overleaf 能力面的实用 CLI 地图。它覆盖已实现命令树、每个命令背后的 Python API，以及来自自托管 Overleaf smoke 的脱敏实践边界。
 
 ## 当前 CLI 树
 
@@ -107,10 +107,10 @@ oleaf files delete "<project-name>" chatol-agent-practice.tex --apply --json
 
 - `files pull` 默认拒绝覆盖已有文件，覆盖必须显式 `--force`。
 - `files pull` 会拒绝 zip-slip 路径逃逸。
-- `files upload` 当前只支持项目根目录文件；嵌套目录上传、自动建目录、rename/full sync 仍是后续增量。
-- `files delete` 当前只按路径删除 `doc`/`file`，不删除 folder，并且必须显式 `--apply`。
-- 项目页缺失 `rootFolder` metadata 时，ChatOL 会使用 Socket.IO project tree fallback 解析 root folder 和文件 id。
-- `files list` 依赖 self-hosted Overleaf 暴露 `/project/{project_id}/entities`；不支持时会明确报 unsupported。
+- `files upload` 当前只支持项目根目录文件；嵌套目录上传、自动建目录、重命名、完整同步仍是后续增量。
+- `files delete` 当前只按路径删除 `doc`/`file`，不删除文件夹，并且必须显式 `--apply`。
+- 项目页缺失 `rootFolder` metadata 时，ChatOL 会使用 Socket.IO 项目树回退解析来获取根目录和文件 ID。
+- `files list` 依赖自托管 Overleaf 暴露 `/project/{project_id}/entities`；不支持时会明确返回“不支持”。
 
 ## 编译和产物
 
@@ -137,18 +137,18 @@ oleaf compile run            -> chatol.workflows.compile_project
 oleaf compile pdf            -> chatol.workflows.download_pdf
 oleaf compile output         -> chatol.workflows.download_output
 
-OverleafClient.from_password -> GET/POST /login, then GET /project
-OverleafClient.list_projects -> GET /project and parse embedded project metadata
+OverleafClient.from_password -> GET/POST /login，然后 GET /project
+OverleafClient.list_projects -> GET /project，并解析嵌入的项目元数据
 OverleafClient.files zip     -> GET /project/{project_id}/download/zip
-OverleafClient.files upload  -> GET /project/{project_id} or Socket.IO tree, then POST /project/{project_id}/upload
-OverleafClient.files delete  -> GET /project/{project_id}/entities + project tree, then DELETE /project/{project_id}/{type}/{id}
+OverleafClient.files upload  -> 读取 /project/{project_id} 或 Socket.IO 项目树，然后 POST /project/{project_id}/upload
+OverleafClient.files delete  -> 读取 /project/{project_id}/entities 和项目树，然后 DELETE /project/{project_id}/{type}/{id}
 OverleafClient.compile       -> POST /project/{project_id}/compile
 ```
 
 ## 安全注意
 
 - 密码和 session cookie 不作为普通命令参数传递。
-- JSON 默认不输出内部 compile URL、owner/updater metadata。
-- artifact 下载拒绝 cross-origin URL。
-- 报告、issue、PR 评论和截图里必须脱敏真实 URL、邮箱、cookie、token、build URL、项目/user ID。
-- 当前只实现单文件 root 上传和受保护单文件删除；rename/full sync/admin/user management 尚未实现，未来必须默认 dry-run 或显式 `--apply`。
+- JSON 默认不输出内部编译 URL、项目所有者/更新者元数据。
+- 产物下载拒绝跨源 URL。
+- 报告、issue、PR 评论和截图里必须脱敏真实 URL、邮箱、cookie、token、build URL、项目 ID 和用户 ID。
+- 当前只实现根目录单文件上传和受保护单文件删除；重命名、完整同步、管理员和用户管理尚未实现，未来必须默认 dry-run 或显式 `--apply`。

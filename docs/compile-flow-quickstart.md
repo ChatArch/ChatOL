@@ -82,6 +82,6 @@ Agent 可以使用这些稳定字段：
 - 本地目录和 Overleaf 项目的双向 sync。
 - 编译日志的自动诊断和源码修改闭环。
 - comments 和协作线程。
-- admin/user management。
+- 管理员和用户管理。
 
-这些能力会在后续 phase 中补齐，且 mutation 默认需要 dry-run / `--apply` 保护。
+这些能力会在后续阶段补齐，且变更操作默认需要 dry-run / `--apply` 保护。

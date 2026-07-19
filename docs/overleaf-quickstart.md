@@ -85,6 +85,6 @@ pdf_path = download_pdf(project.name, Path("output.pdf"))
 
 ## 当前边界
 
-- 已实现：登录/session、项目列表、项目信息、编译、PDF 下载、compile output 下载。
-- 未实现：文件树/上传/删除、双向 sync、comments、admin/user management。
+- 已实现：登录/session、项目列表、项目信息、编译、PDF 下载、compile output 下载、项目 zip 拉取、本地 pull、根目录单文件上传和受保护单文件删除。
+- 未实现：嵌套目录上传、双向同步、评论、管理员和用户管理。
 - 变更性操作后续必须默认 dry-run 或要求显式 `--apply`。

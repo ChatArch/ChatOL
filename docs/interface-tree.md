@@ -45,7 +45,7 @@ result = client.compile_project(project.id)
 
 ## `chatol.workflows`
 
-Workflow 函数负责把配置解析、重试、文件写入和 CLI 复用逻辑集中起来。
+工作流函数负责把配置解析、重试、文件写入和 CLI 复用逻辑集中起来。
 
 ```text
 client_from_env(

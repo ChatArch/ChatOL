@@ -5,8 +5,8 @@
 状态约定：
 
 - **已实现**：代码、单测和 CLI 路径已经存在。
-- **已验证**：已在 self-hosted Overleaf 上做过脱敏 live practice。
-- **未实现**：只记录设计方向和安全要求；等真实实现、测试和 live practice 完成后，再补操作文档。
+- **已验证**：已在自托管 Overleaf 上做过脱敏真实实践。
+- **未实现**：只记录设计方向和安全要求；等真实实现、测试和真实实践完成后，再补操作文档。
 
 ## 当前已实现并已验证
 
@@ -33,11 +33,11 @@ oleaf
 | `oleaf doctor` | `client_from_env`, `OverleafClient.list_projects` | 已实现 |
 | `oleaf projects list` | `chatol.workflows.list_projects` | 已实现 |
 | `oleaf projects info` | `chatol.workflows.get_project` | 已实现 |
-| `oleaf files list` | `chatol.workflows.list_files` | 已实现，已 live practice |
-| `oleaf files zip` | `chatol.workflows.download_project_zip` | 已实现，已 live practice |
-| `oleaf files pull` | `chatol.workflows.pull_project` | 已实现，已 live practice |
-| `oleaf files upload` | `chatol.workflows.upload_file` | 已实现，已 live practice；当前仅根目录 |
-| `oleaf files delete` | `chatol.workflows.delete_file` | 已实现，已 live practice；必须显式 `--apply` |
+| `oleaf files list` | `chatol.workflows.list_files` | 已实现，已真实验证 |
+| `oleaf files zip` | `chatol.workflows.download_project_zip` | 已实现，已真实验证 |
+| `oleaf files pull` | `chatol.workflows.pull_project` | 已实现，已真实验证 |
+| `oleaf files upload` | `chatol.workflows.upload_file` | 已实现，已真实验证；当前仅根目录 |
+| `oleaf files delete` | `chatol.workflows.delete_file` | 已实现，已真实验证；必须显式 `--apply` |
 | `oleaf compile run` | `chatol.workflows.compile_project` | 已实现 |
 | `oleaf compile pdf` | `chatol.workflows.download_pdf` | 已实现 |
 | `oleaf compile output` | `chatol.workflows.download_output` | 已实现 |
@@ -55,13 +55,13 @@ oleaf files
 
 要求：
 
-- 每个命令背后必须有 importable Python 函数。
+- 每个命令背后必须有可 import 的 Python 函数。
 - `pull` 默认不覆盖本地文件；覆盖必须显式 `--force`。
 - `pull` 必须拒绝 zip-slip 路径逃逸。
 - `upload` 当前只支持项目根目录文件；嵌套目录和自动建目录进入后续增量。
-- `delete` 当前只删除 `doc`/`file`，不删除 folder，并且必须显式 `--apply`。
-- 项目页缺失 `rootFolder` metadata 时，client 使用 Socket.IO project tree fallback 解析 root folder 和文件 id。
-- 报告里脱敏 project ID、entity ID 和内部 URL。
+- `delete` 当前只删除 `doc`/`file`，不删除文件夹，并且必须显式 `--apply`。
+- 项目页缺失 `rootFolder` metadata 时，client 使用 Socket.IO 项目树回退解析来获取根目录和文件 ID。
+- 报告里脱敏项目 ID、entity ID 和内部 URL。
 
 ## 未实现：后续文件操作
 
@@ -81,7 +81,7 @@ oleaf sync
 ├── plan <project> <dir>
 ├── pull <project> <dir>
 ├── push <project> <dir> --apply
-└── sync <project> <dir> --no-delete by default
+└── sync <project> <dir> --no-delete 默认开启
 ```
 
 要求：
@@ -91,7 +91,7 @@ oleaf sync
 - 冲突报告必须可 JSON 序列化。
 - ignore 规则覆盖 LaTeX 产物、临时文件和项目本地 ignore 文件。
 
-## 未实现：计划中的 admin/user management
+## 未实现：计划中的管理员和用户管理
 
 ```text
 oleaf admin
@@ -105,11 +105,11 @@ oleaf admin
 └── projects transfer <project> --to <user> --apply
 ```
 
-Admin 能力必须单独做 route/权限/版本探测，不能假定 Overleaf admin API 稳定可用，也不能默认直接写 Mongo。
+管理员能力必须单独做路由、权限和版本探测，不能假定 Overleaf 管理员 API 稳定可用，也不能默认直接写 Mongo。
 
 ## 不纳入第一版的能力
 
 - 自动修改 LaTeX 源码并回写 Overleaf。
-- comments/thread 管理。
+- 评论和协作线程管理。
 - Overleaf 服务部署、升级、备份本身。
 - 不受保护的破坏性操作。
