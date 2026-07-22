@@ -7,18 +7,23 @@ from chatenv import EnvStore, get_paths
 from chatol import workflows
 from chatol.config import OverleafConfig
 from chatol.errors import CompileError
-from chatol.models import CompileOutput, CompileResult, Project, ProjectFile, UploadResult
+from chatol.models import AdminStatus, CompileOutput, CompileResult, Project, ProjectFile, UploadResult
 from chatol.workflows import (
+    admin_status,
     compile_project,
     delete_file,
+    download_compile_bundle,
     download_output,
     download_pdf,
     download_project_zip,
     get_project,
     list_files,
     list_projects,
+    list_templates,
     pull_project,
     upload_file,
+    upload_template,
+    write_template,
 )
 
 
@@ -40,13 +45,22 @@ class FakeClient:
         self.compile_attempts += 1
         if self.compile_attempts == 1:
             raise CompileError("too-recently-compiled")
-        return CompileResult(status="success", output_files=[CompileOutput(path="output.pdf", url="/pdf", type="pdf")])
+        return CompileResult(
+            status="success",
+            output_files=[
+                CompileOutput(path="output.pdf", url="/pdf", type="pdf"),
+                CompileOutput(path="output.log", url="/log", type="log"),
+            ],
+        )
 
     def download_pdf(self, project_id):
         return b"%PDF fake"
 
     def download_output(self, project_id, output_type):
         return f"artifact:{output_type}".encode()
+
+    def download_compile_output(self, output, result=None):
+        return f"bundle:{output.path}".encode()
 
     def list_files(self, project_id):
         return [ProjectFile(path="main.tex", type="doc", id="doc1", name="main.tex")]
@@ -63,6 +77,9 @@ class FakeClient:
 
     def delete_file(self, project_id, remote_path):
         return ProjectFile(path=remote_path, type="doc", id="entity1", name=remote_path)
+
+    def admin_status(self):
+        return AdminStatus(available=True, authenticated=False, status_code=403, message="admin route requires admin")
 
 
 class RecorderClient:
@@ -185,6 +202,46 @@ def test_file_workflows_zip_pull_and_upload(tmp_path: Path):
     assert (tmp_path / "paper" / "main.tex").read_text(encoding="utf-8") == "Hello"
     assert uploaded.remote_path == "agent-note.tex"
     assert deleted.path == "agent-note.tex"
+
+
+def test_compile_bundle_downloads_multiple_artifacts_once(tmp_path: Path):
+    client = FakeClient()
+
+    result = download_compile_bundle(
+        "Paper",
+        tmp_path / "bundle",
+        output_types=("pdf", "log"),
+        include_project_zip=True,
+        client=client,
+        retry_delays=(0, 0),
+        sleep=lambda _: None,
+    )
+
+    assert [artifact.output_type for artifact in result.artifacts] == ["pdf", "log", "project_zip"]
+    assert (tmp_path / "bundle" / "output.pdf").read_bytes() == b"bundle:output.pdf"
+    assert (tmp_path / "bundle" / "output.log").read_bytes() == b"bundle:output.log"
+    assert (tmp_path / "bundle" / "project.zip").read_bytes().startswith(b"PK")
+    assert client.compile_attempts == 2
+
+
+def test_template_workflows_write_and_upload(tmp_path: Path):
+    specs = list_templates()
+    names = {spec.name for spec in specs}
+
+    assert "article-basic" in names
+    written = write_template("article-basic", tmp_path / "template")
+    uploaded = upload_template("Paper", tmp_path / "template", client=FakeClient())
+
+    assert sorted(path.name for path in written) == ["main.tex", "references.bib"]
+    assert (tmp_path / "template" / "main.tex").read_text(encoding="utf-8").startswith("\\documentclass")
+    assert [item.remote_path for item in uploaded] == ["main.tex", "references.bib"]
+
+
+def test_admin_status_is_read_only_workflow():
+    status = admin_status(client=FakeClient())
+
+    assert status.available is True
+    assert status.authenticated is False
 
 
 def test_pull_project_refuses_zip_slip(tmp_path: Path):

@@ -12,17 +12,22 @@ import click
 from chatol import __version__
 from chatol.errors import ChatOLError
 from chatol.workflows import (
+    admin_status,
     client_from_env,
     compile_project,
     delete_file,
+    download_compile_bundle,
     download_output,
     download_pdf,
     download_project_zip,
     get_project,
     list_files,
     list_projects,
+    list_templates,
     pull_project,
+    upload_template,
     upload_file,
+    write_template,
 )
 
 
@@ -190,6 +195,71 @@ def files_delete(ctx: click.Context, project: str, remote_path: str, apply: bool
         _handle_error(exc, as_json=as_json)
 
 
+@main.group()
+def templates() -> None:
+    """Local template commands."""
+
+
+@templates.command("list")
+@click.option("--json", "--json-output", "as_json", is_flag=True, help="Output machine-readable JSON.")
+def templates_list(as_json: bool) -> None:
+    """List built-in templates."""
+
+    try:
+        items = list_templates()
+        _emit([item.to_dict() for item in items], as_json=as_json)
+    except Exception as exc:  # noqa: BLE001
+        _handle_error(exc, as_json=as_json)
+
+
+@templates.command("init")
+@click.argument("template")
+@click.argument("output_dir", type=click.Path(path_type=Path, file_okay=False))
+@click.option("--force", is_flag=True, help="Overwrite existing local template files.")
+@click.option("--json", "--json-output", "as_json", is_flag=True, help="Output machine-readable JSON.")
+def templates_init(template: str, output_dir: Path, force: bool, as_json: bool) -> None:
+    """Write a built-in template to a local directory."""
+
+    try:
+        paths = write_template(template, output_dir, force=force)
+        _emit({"ok": True, "template": template, "files": [str(path) for path in paths]}, as_json=as_json)
+    except Exception as exc:  # noqa: BLE001
+        _handle_error(exc, as_json=as_json)
+
+
+@templates.command("upload")
+@click.argument("project")
+@click.argument("template_dir", type=click.Path(path_type=Path, file_okay=False, exists=True))
+@click.option("--json", "--json-output", "as_json", is_flag=True, help="Output machine-readable JSON.")
+@click.pass_context
+def templates_upload(ctx: click.Context, project: str, template_dir: Path, as_json: bool) -> None:
+    """Upload root-level template files to an Overleaf project."""
+
+    try:
+        results = upload_template(project, template_dir, **_client_kwargs(ctx))
+        _emit({"ok": True, "uploaded": [result.to_dict() for result in results]}, as_json=as_json)
+    except Exception as exc:  # noqa: BLE001
+        _handle_error(exc, as_json=as_json)
+
+
+@main.group()
+def admin() -> None:
+    """Read-only admin and user-management probes."""
+
+
+@admin.command("doctor")
+@click.option("--json", "--json-output", "as_json", is_flag=True, help="Output machine-readable JSON.")
+@click.pass_context
+def admin_doctor(ctx: click.Context, as_json: bool) -> None:
+    """Probe admin availability without changing users or projects."""
+
+    try:
+        status = admin_status(**_client_kwargs(ctx))
+        _emit(status.to_dict(), as_json=as_json)
+    except Exception as exc:  # noqa: BLE001
+        _handle_error(exc, as_json=as_json)
+
+
 @main.group(name="compile")
 def compile_group() -> None:
     """Compile and output artifact commands."""
@@ -240,6 +310,37 @@ def compile_output(ctx: click.Context, project: str, output_type: str, output: P
             {"ok": True, "output_type": output_type, "output": str(path), "bytes": path.stat().st_size},
             as_json=as_json,
         )
+    except Exception as exc:  # noqa: BLE001
+        _handle_error(exc, as_json=as_json)
+
+
+@compile_group.command("bundle")
+@click.argument("project")
+@click.option("-o", "--output-dir", required=True, type=click.Path(path_type=Path, file_okay=False), help="Directory for downloaded artifacts.")
+@click.option("--output-type", "output_types", multiple=True, default=("pdf", "log"), help="Compile output type to download. Can be repeated.")
+@click.option("--include-source-zip", is_flag=True, help="Also download the project source zip.")
+@click.option("--json", "--json-output", "as_json", is_flag=True, help="Output machine-readable JSON.")
+@click.pass_context
+def compile_bundle(
+    ctx: click.Context,
+    project: str,
+    output_dir: Path,
+    output_types: tuple[str, ...],
+    include_source_zip: bool,
+    as_json: bool,
+) -> None:
+    """Compile once and download several common paper artifacts."""
+
+    try:
+        result = download_compile_bundle(
+            project,
+            output_dir,
+            output_types=output_types,
+            include_project_zip=include_source_zip,
+            **_client_kwargs(ctx),
+        )
+        payload = {"ok": True, **result.to_dict()}
+        _emit(payload, as_json=as_json)
     except Exception as exc:  # noqa: BLE001
         _handle_error(exc, as_json=as_json)
 

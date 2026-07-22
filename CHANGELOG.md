@@ -6,6 +6,9 @@
 
 - Added `oleaf files list`, `files zip`, `files pull`, `files upload`, and guarded `files delete --apply` for the first Agent-oriented Overleaf file loop.
 - Added importable file workflow APIs: `list_files`, `download_project_zip`, `pull_project`, `upload_file`, and `delete_file`.
+- Added `oleaf compile bundle` and `download_compile_bundle` for one-compile PDF/log/source-zip export workflows.
+- Added `oleaf templates list/init/upload` and importable template workflows for local paper templates.
+- Added `oleaf admin doctor` and `admin_status` for read-only admin/user-management entrypoint probing.
 - Added public documentation for the Overleaf Agent task loop and file workflow commands.
 
 ### Fixed

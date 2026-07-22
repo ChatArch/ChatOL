@@ -20,6 +20,18 @@
 5. 用 `compile pdf` 和 `compile output` 下载 PDF 与日志；
 6. 根据日志继续修改，直到编译结果满足任务要求。
 
+如果是新文章，可以先用模板命令生成本地入口文件，再上传到 Overleaf 项目。
+
+## 初始化模板
+
+```bash
+oleaf templates list --json
+oleaf templates init article-basic ./source --json
+oleaf templates upload "<project-name>" ./source --json
+```
+
+模板命令只上传目录根层文件；图片、章节子目录等复杂结构建议先通过 `files pull` 看清远端结构，再分批处理。
+
 ## 拉取项目源码
 
 ```bash
@@ -70,6 +82,7 @@ oleaf files list "<project-name>" --json
 oleaf compile run "<project-name>" --json
 oleaf compile pdf "<project-name>" -o ./artifacts/output.pdf --json
 oleaf compile output "<project-name>" log -o ./artifacts/output.log --json
+oleaf compile bundle "<project-name>" -o ./artifacts --json
 ```
 
 `compile pdf` 和 `compile output` 会在 workflow 层处理 Overleaf 编译冷却和可重试错误。默认 JSON 输出不会暴露内部编译 URL。
@@ -80,15 +93,13 @@ oleaf compile output "<project-name>" log -o ./artifacts/output.log --json
 
 ```python
 from pathlib import Path
-from chatol.workflows import compile_project, download_output, download_pdf, pull_project, upload_file
+from chatol.workflows import download_compile_bundle, pull_project, upload_file
 
 project_name = "<project-name>"
 
 pull_project(project_name, Path("source"))
 upload_file(project_name, Path("source/main.tex"), remote_path="main.tex")
-compile_project(project_name)
-download_pdf(project_name, Path("artifacts/output.pdf"))
-download_output(project_name, "log", Path("artifacts/output.log"))
+download_compile_bundle(project_name, Path("artifacts"))
 ```
 
 ## 安全边界

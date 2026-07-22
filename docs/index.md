@@ -1,6 +1,6 @@
 # ChatOL 文档
 
-ChatOL 是 ChatArch 的 Overleaf 工作流 CLI/API 包。它面向自托管 Overleaf，把项目发现、源码拉取、单文件上传、远端编译、PDF/日志下载封装成可 import 的 Python API，并提供薄 CLI `oleaf` 方便 Agent 和脚本调用。
+ChatOL 是 ChatArch 的 Overleaf 工作流 CLI/API 包。它面向自托管 Overleaf，把项目发现、源码拉取、模板初始化和上传、远端编译、PDF/日志下载封装成可 import 的 Python API，并提供薄 CLI `oleaf` 方便 Agent 和脚本调用。
 
 ## 从这里开始
 
@@ -37,10 +37,17 @@ oleaf
 │   ├── pull <project> <dir> [--force]
 │   ├── upload <project> <local-path> [--remote-path <name>]
 │   └── delete <project> <remote-path> --apply
-└── compile
-    ├── run <project>
-    ├── pdf <project> -o <path>
-    └── output <project> <output-type> -o <path>
+├── templates
+│   ├── list
+│   ├── init <template> <dir>
+│   └── upload <project> <dir>
+├── compile
+│   ├── run <project>
+│   ├── pdf <project> -o <path>
+│   ├── output <project> <output-type> -o <path>
+│   └── bundle <project> -o <dir>
+└── admin
+    └── doctor
 ```
 
 ## 配置来源

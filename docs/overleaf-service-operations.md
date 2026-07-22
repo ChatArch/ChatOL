@@ -40,6 +40,31 @@ OVERLEAF_HTTP_TIMEOUT          # HTTP timeout 秒数
 - `chatenv cat -t overleaf` 应只显示 masked 敏感字段。
 - 公开输出里要脱敏真实 URL、邮箱、cookie、token、项目 ID 和 build URL。
 
+ChatOL 不维护独立账号体系，也不提供额外 API key。`oleaf` 的权限来自它使用的 Overleaf session：这个 session 能看见和修改哪些项目，`oleaf` 就能通过 Overleaf Web 路由操作哪些项目。
+
+## ChatEnv 默认配置
+
+安装 ChatOL 后，ChatEnv 会注册 `overleaf` 配置类型。可以把 Overleaf 连接信息保存到 active profile，然后直接运行 `oleaf`：
+
+```bash
+python -m chatenv.cli init -t overleaf -I
+python -m chatenv.cli set OVERLEAF_SITE_URL=https://overleaf.example.com -I
+python -m chatenv.cli set OVERLEAF_ADMIN_EMAIL=<email> -I
+printf 'OVERLEAF_ADMIN_PASSWORD=%s\n' "$OVERLEAF_PASSWORD" | python -m chatenv.cli paste --stdin -y -I
+oleaf doctor --json
+```
+
+使用 session cookie 时：
+
+```bash
+python -m chatenv.cli set OVERLEAF_SITE_URL=https://overleaf.example.com -I
+printf 'OVERLEAF_SESSION_COOKIE=%s\n' "$OVERLEAF_SESSION_COOKIE" | python -m chatenv.cli paste --stdin -y -I
+python -m chatenv.cli set OVERLEAF_SESSION_COOKIE_NAME=overleaf_session2 -I
+oleaf doctor --json
+```
+
+配置优先级是：显式 CLI/Python 参数 > 进程环境变量 > active ChatEnv `overleaf` profile。源码开发环境如果 `python -m chatenv.cli status` 看不到 `Overleaf` provider，先安装包或执行 `pip install -e .` 注册 entry point。
+
 ## 内网和公网入口
 
 服务端自动化优先使用 Overleaf 同机 loopback 或内网入口，减少公网暴露面：
