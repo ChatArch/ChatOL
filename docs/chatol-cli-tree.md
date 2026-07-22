@@ -16,10 +16,17 @@ oleaf
 │   ├── pull <project> <dir> [--force]
 │   ├── upload <project> <local-path> [--remote-path <name>]
 │   └── delete <project> <remote-path> --apply
-└── compile
-    ├── run <project>
-    ├── pdf <project> -o <path>
-    └── output <project> <output-type> -o <path>
+├── templates
+│   ├── list
+│   ├── init <template> <dir>
+│   └── upload <project> <dir>
+├── compile
+│   ├── run <project>
+│   ├── pdf <project> -o <path>
+│   ├── output <project> <output-type> -o <path>
+│   └── bundle <project> -o <dir>
+└── admin
+    └── doctor
 ```
 
 | CLI | Python API | 说明 |
@@ -32,9 +39,14 @@ oleaf
 | `oleaf files pull` | `chatol.workflows.pull_project` | 下载并安全解压项目 zip |
 | `oleaf files upload` | `chatol.workflows.upload_file` | 上传根目录单文件 |
 | `oleaf files delete` | `chatol.workflows.delete_file` | 受保护删除远端单文件，必须 `--apply` |
+| `oleaf templates list` | `chatol.workflows.list_templates` | 列出内置本地模板 |
+| `oleaf templates init` | `chatol.workflows.write_template` | 把模板写到本地目录 |
+| `oleaf templates upload` | `chatol.workflows.upload_template` | 上传模板目录根层文件 |
 | `oleaf compile run` | `chatol.workflows.compile_project` | 触发远端编译 |
 | `oleaf compile pdf` | `chatol.workflows.download_pdf` | 编译并下载 PDF |
 | `oleaf compile output` | `chatol.workflows.download_output` | 编译并下载指定产物 |
+| `oleaf compile bundle` | `chatol.workflows.download_compile_bundle` | 编译一次并下载多个常用产物 |
+| `oleaf admin doctor` | `chatol.workflows.admin_status` | 只读探测管理员入口 |
 
 ## 文件命令边界
 
@@ -44,6 +56,8 @@ oleaf
 - `files delete` 当前只删除 `doc`/`file`，不删除文件夹，并且必须显式 `--apply`。
 - 项目页缺失 `rootFolder` metadata 时，client 使用 Socket.IO 项目树回退解析来获取根目录和文件 ID。
 - 默认 JSON 输出不包含内部编译 URL、项目所有者/更新者元数据。
+- `templates upload` 只上传模板目录根层文件，不做嵌套目录同步。
+- `admin doctor` 只读探测，不创建、禁用或删除用户。
 
 ## 规划中的文件操作
 

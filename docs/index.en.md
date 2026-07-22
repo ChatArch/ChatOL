@@ -1,6 +1,6 @@
 # ChatOL Docs
 
-ChatOL is ChatArch's Overleaf workflow CLI/API package for self-hosted Overleaf. It exposes project discovery, source pulls, single-file uploads, remote compilation, and PDF/log downloads as importable Python APIs with a thin `oleaf` CLI for agents and scripts.
+ChatOL is ChatArch's Overleaf workflow CLI/API package for self-hosted Overleaf. It exposes project discovery, source pulls, template initialization and uploads, remote compilation, and PDF/log downloads as importable Python APIs with a thin `oleaf` CLI for agents and scripts.
 
 ## Start Here
 
@@ -37,10 +37,17 @@ oleaf
 │   ├── pull <project> <dir> [--force]
 │   ├── upload <project> <local-path> [--remote-path <name>]
 │   └── delete <project> <remote-path> --apply
-└── compile
-    ├── run <project>
-    ├── pdf <project> -o <path>
-    └── output <project> <output-type> -o <path>
+├── templates
+│   ├── list
+│   ├── init <template> <dir>
+│   └── upload <project> <dir>
+├── compile
+│   ├── run <project>
+│   ├── pdf <project> -o <path>
+│   ├── output <project> <output-type> -o <path>
+│   └── bundle <project> -o <dir>
+└── admin
+    └── doctor
 ```
 
 ## Configuration Sources

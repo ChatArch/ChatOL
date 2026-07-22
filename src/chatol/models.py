@@ -101,6 +101,64 @@ class UploadResult:
 
 
 @dataclass(frozen=True)
+class TemplateSpec:
+    """A local template that can be written to disk or uploaded."""
+
+    name: str
+    description: str
+    files: tuple[str, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"name": self.name, "description": self.description, "files": list(self.files)}
+
+
+@dataclass(frozen=True)
+class DownloadedArtifact:
+    """A compile or project artifact written to disk."""
+
+    output_type: str
+    path: str
+    bytes: int
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"output_type": self.output_type, "path": self.path, "bytes": self.bytes}
+
+
+@dataclass(frozen=True)
+class CompileBundleResult:
+    """Result for a compile plus multiple downloaded artifacts."""
+
+    project: Project
+    compile: "CompileResult"
+    artifacts: list[DownloadedArtifact]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "project": self.project.to_dict(),
+            "compile": self.compile.to_dict(),
+            "artifacts": [artifact.to_dict() for artifact in self.artifacts],
+        }
+
+
+@dataclass(frozen=True)
+class AdminStatus:
+    """Read-only status for Overleaf admin/user-management entrypoints."""
+
+    available: bool
+    authenticated: bool
+    status_code: int
+    message: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "available": self.available,
+            "authenticated": self.authenticated,
+            "status_code": self.status_code,
+            "message": self.message,
+        }
+
+
+@dataclass(frozen=True)
 class CompileOutput:
     """A single file produced by an Overleaf compile."""
 

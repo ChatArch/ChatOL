@@ -11,6 +11,7 @@ oleaf projects info          # 解析项目名或项目 ID
 oleaf compile run            # 触发编译并返回编译状态
 oleaf compile pdf            # 编译并下载 PDF
 oleaf compile output         # 编译并下载指定产物，例如 log
+oleaf compile bundle         # 编译一次并下载多种常用产物
 ```
 
 所有命令支持 `--json` / `--json-output`，方便 Agent 读取结构化结果。
@@ -24,6 +25,7 @@ oleaf projects info "<project-name>" --json
 oleaf compile run "<project-name>" --json
 oleaf compile pdf "<project-name>" -o build/output.pdf --json
 oleaf compile output "<project-name>" log -o build/output.log --json
+oleaf compile bundle "<project-name>" -o build/artifacts --json
 ```
 
 推荐把 Agent 产物写进任务工作目录，例如 `build/` 或 project-local `playground/`，不要写到仓库根目录的长期文档区。
@@ -38,6 +40,15 @@ project = get_project("<project-name>")
 resolved, result = compile_project(project.id)
 pdf_path = download_pdf(project.id, Path("build/output.pdf"))
 log_path = download_output(project.id, "log", Path("build/output.log"))
+```
+
+如果调用方需要一次拿到 PDF 和日志，可以使用 bundle workflow：
+
+```python
+from pathlib import Path
+from chatol.workflows import download_compile_bundle
+
+bundle = download_compile_bundle("<project-name>", Path("build/artifacts"))
 ```
 
 如果是长期服务进程，也可以自己创建 `OverleafClient` 并复用 session：
@@ -73,6 +84,7 @@ Agent 可以使用这些稳定字段：
 | `compile run --json` | compile `status` 和 output 类型摘要 |
 | `compile pdf --json` | `ok`, 本地 `output`, 文件大小字段 |
 | `compile output --json` | `ok`, `output_type`, 本地 `output`, 文件大小字段 |
+| `compile bundle --json` | `ok`, `project`, `compile`, `artifacts` |
 
 默认 JSON 不输出内部编译 URL、项目所有者/更新者元数据。不要把真实服务 URL、邮箱、cookie、build URL、项目 ID 或用户 ID 写进公开输出。
 

@@ -83,7 +83,41 @@ oleaf compile pdf "<project-name>" -o output.pdf --json
 oleaf compile output "<project-name>" log -o output.log --json
 ```
 
-## 5. 拉取和上传文件
+如果想一次拿到 PDF 和日志，可以用 bundle 命令：
+
+```bash
+oleaf compile bundle "<project-name>" -o ./artifacts --json
+```
+
+需要同时保存项目源码 zip 时加上：
+
+```bash
+oleaf compile bundle "<project-name>" -o ./artifacts --include-source-zip --json
+```
+
+## 5. 使用模板
+
+查看内置模板：
+
+```bash
+oleaf templates list --json
+```
+
+把模板写到本地目录：
+
+```bash
+oleaf templates init article-basic ./template --json
+```
+
+把模板根目录文件上传到 Overleaf 项目：
+
+```bash
+oleaf templates upload "<project-name>" ./template --json
+```
+
+模板上传只处理模板目录根层文件，不做嵌套目录同步。
+
+## 6. 拉取和上传文件
 
 把 Overleaf 项目拉到本地目录：
 
@@ -105,15 +139,15 @@ oleaf files delete "<project-name>" old-note.tex --apply --json
 
 更多说明见 [Agent 任务闭环](agent-overleaf-flow.md)。
 
-## 6. Python 调用
+## 7. Python 调用
 
 ```python
 from pathlib import Path
-from chatol.workflows import compile_project, download_pdf, list_projects
+from chatol.workflows import download_compile_bundle, list_projects, write_template
 
 projects = list_projects()
-project, result = compile_project(projects[0].id)
-pdf_path = download_pdf(project.id, Path("output.pdf"))
+write_template("article-basic", Path("template"))
+bundle = download_compile_bundle(projects[0].id, Path("artifacts"))
 ```
 
 ## 常见问题
@@ -124,4 +158,5 @@ pdf_path = download_pdf(project.id, Path("output.pdf"))
 | 项目名找不到 | 先用 `oleaf projects list --json` 确认名称；脚本中优先使用项目 ID |
 | 拉取目录已有文件 | 默认不会覆盖；确认安全后加 `--force` |
 | 上传嵌套路径失败 | 当前只支持根目录单文件上传 |
+| 模板上传后覆盖了远端文件 | 上传前先用 `oleaf files list` 检查远端文件名 |
 | 删除文件失败 | 确认路径是文件而不是文件夹，并且命令包含 `--apply` |

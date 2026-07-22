@@ -17,7 +17,7 @@ from typing import Any
 
 from chatol.errors import AuthenticationError, CompileError, FileOperationError, ProjectNotFoundError, UnsupportedRouteError
 from chatol.html import extract_csrf_token, extract_projects_payloads, looks_like_login_page, parse_overleaf_html
-from chatol.models import CompileOutput, CompileResult, Project, ProjectFile, UploadResult
+from chatol.models import AdminStatus, CompileOutput, CompileResult, Project, ProjectFile, UploadResult
 
 USER_AGENT = "ChatOL/0.1 (+https://github.com/ChatArch/ChatOL)"
 DEFAULT_COOKIE_NAME = "overleaf_session2"
@@ -251,6 +251,19 @@ class OverleafClient:
                 raise FileOperationError(f"Failed to delete file: {response.status}")
             return entity
         raise FileOperationError(f"File not found: {remote_path}")
+
+    def admin_status(self) -> AdminStatus:
+        """Probe the admin entrypoint without mutating users or projects."""
+
+        response = self._request("GET", "/admin")
+        text = response.text()
+        if response.status == 404:
+            return AdminStatus(False, False, response.status, "admin route not found")
+        if response.status in {401, 403} or looks_like_login_page(text):
+            return AdminStatus(True, False, response.status, "admin route requires an authenticated admin session")
+        if response.ok:
+            return AdminStatus(True, True, response.status, "admin route is reachable")
+        return AdminStatus(True, False, response.status, f"admin route returned HTTP {response.status}")
 
     def compile_project(self, project_id: str) -> CompileResult:
         """Trigger Overleaf compilation for a project."""

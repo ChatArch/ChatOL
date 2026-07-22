@@ -1,14 +1,28 @@
 """ChatOL package."""
 
 from chatol.client import OverleafClient
-from chatol.models import CompileOutput, CompileResult, Project, ProjectFile, UploadResult
+from chatol.models import (
+    AdminStatus,
+    CompileBundleResult,
+    CompileOutput,
+    CompileResult,
+    DownloadedArtifact,
+    Project,
+    ProjectFile,
+    TemplateSpec,
+    UploadResult,
+)
 
 __all__ = [
+    "AdminStatus",
+    "CompileBundleResult",
     "CompileOutput",
     "CompileResult",
+    "DownloadedArtifact",
     "OverleafClient",
     "Project",
     "ProjectFile",
+    "TemplateSpec",
     "UploadResult",
     "__version__",
 ]

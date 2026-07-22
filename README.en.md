@@ -43,9 +43,14 @@ export OVERLEAF_ADMIN_PASSWORD="<password>"
 oleaf doctor --json
 oleaf projects list --json
 oleaf projects info "<project-name>" --json
+oleaf files pull "<project-name>" ./source --json
+oleaf templates init article-basic ./template --json
+oleaf templates upload "<project-name>" ./template --json
 oleaf compile run "<project-name>" --json
 oleaf compile pdf "<project-name>" -o output.pdf --json
 oleaf compile output "<project-name>" log -o output.log --json
+oleaf compile bundle "<project-name>" -o artifacts --json
+oleaf admin doctor --json
 ```
 
 Passwords and session cookies can also be passed with `--password-stdin` / `--session-stdin` so they do not appear in shell history or process arguments.
