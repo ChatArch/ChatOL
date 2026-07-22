@@ -81,9 +81,14 @@ ChatEnv 方式：
 
 ```bash
 python -m chatenv.cli init -t overleaf -I
+python -m chatenv.cli set OVERLEAF_SITE_URL=https://overleaf.example.com -I
+python -m chatenv.cli set OVERLEAF_ADMIN_EMAIL=<email> -I
+printf 'OVERLEAF_ADMIN_PASSWORD=%s\n' "$OVERLEAF_PASSWORD" | python -m chatenv.cli paste --stdin -y -I
 python -m chatenv.cli test -t overleaf -I
 oleaf doctor --json
 ```
+
+保存 active `overleaf` profile 后，`oleaf` 会自动读取 ChatEnv，不需要在普通命令里重复传账号密码。使用 session cookie 时，把 `OVERLEAF_SESSION_COOKIE` 用同样的 `paste --stdin` 方式写入 ChatEnv。
 
 配置优先级：显式 CLI/Python 参数 > 进程环境变量 > active ChatEnv `overleaf` profile。
 

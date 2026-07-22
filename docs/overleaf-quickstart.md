@@ -46,14 +46,22 @@ export OVERLEAF_SESSION_COOKIE="<session-cookie>"
 export OVERLEAF_SESSION_COOKIE_NAME="overleaf_session2"
 ```
 
-也可以通过 ChatEnv 保存当前环境的 `overleaf` profile：
+也可以通过 ChatEnv 保存当前环境的 `overleaf` profile。保存后，`oleaf` 会自动读取 active profile，不需要在每条 CLI 命令里显式传账号密码：
 
 ```bash
 python -m chatenv.cli init -t overleaf -I
-python -m chatenv.cli set OVERLEAF_SITE_URL=https://overleaf.example.com
-python -m chatenv.cli paste OVERLEAF_ADMIN_EMAIL --stdin
-python -m chatenv.cli paste OVERLEAF_ADMIN_PASSWORD --stdin
+python -m chatenv.cli set OVERLEAF_SITE_URL=https://overleaf.example.com -I
+python -m chatenv.cli set OVERLEAF_ADMIN_EMAIL=<email> -I
+printf 'OVERLEAF_ADMIN_PASSWORD=%s\n' "$OVERLEAF_PASSWORD" | python -m chatenv.cli paste --stdin -y -I
 python -m chatenv.cli test -t overleaf -I
+```
+
+如果使用 session cookie，也可以把 cookie 存进 ChatEnv：
+
+```bash
+python -m chatenv.cli set OVERLEAF_SITE_URL=https://overleaf.example.com -I
+printf 'OVERLEAF_SESSION_COOKIE=%s\n' "$OVERLEAF_SESSION_COOKIE" | python -m chatenv.cli paste --stdin -y -I
+python -m chatenv.cli set OVERLEAF_SESSION_COOKIE_NAME=overleaf_session2 -I
 ```
 
 不要把真实密码、cookie、token 或内部项目 ID 写进 shell history、README、issue 或 PR。
