@@ -1,123 +1,115 @@
-# ChatOL Development Plan
+# 功能路线图
 
-## Review Contract
+这页说明 ChatOL 的能力边界：哪些命令可以直接使用，哪些方向还需要更明确的安全保护后再开放。
 
-ChatOL development follows these review rules:
+## 已开放能力
 
-- Every CLI command must be a thin wrapper over an importable Python function or class method.
-- Core behavior lives in `chatol.client` and `chatol.workflows`, not inside Click command bodies.
-- CLI commands must support machine-readable JSON output for agent usage.
-- Secrets must never be passed as positional command arguments; use stdin, environment variables, or private profile storage.
-- Destructive operations must default to dry-run or require an explicit `--apply` style flag.
-- Live-practice reports must redact emails, passwords, session cookies, build URLs, and internal project/user IDs.
-- Tests should cover both importable functions and CLI wrappers.
-
-## Phase 1: Native Read/Compile Core
-
-Scope implemented in the first development branch:
+### 连接和项目发现
 
 ```text
-oleaf
-├── Python API
-│   ├── OverleafClient.from_password
-│   ├── OverleafClient.from_session_cookie
-│   ├── OverleafClient.list_projects
-│   ├── OverleafClient.get_project
-│   ├── OverleafClient.compile_project
-│   ├── OverleafClient.download_pdf
-│   └── OverleafClient.download_output
-├── workflow functions
-│   ├── client_from_env
-│   ├── list_projects
-│   ├── get_project
-│   ├── compile_project
-│   ├── download_pdf
-│   └── download_output
-└── CLI thin wrappers
-    ├── oleaf doctor
-    ├── oleaf projects list
-    ├── oleaf projects info <project>
-    ├── oleaf compile run <project>
-    ├── oleaf compile pdf <project> -o <path>
-    └── oleaf compile output <project> <type> -o <path>
+oleaf doctor
+oleaf projects list
+oleaf projects info <project>
 ```
 
-Design choices:
+用途：
 
-- Use the Python standard library HTTP stack first to keep the dependency surface small.
-- Reuse official Overleaf configuration names where they exist: `OVERLEAF_SITE_URL` and `OVERLEAF_ADMIN_EMAIL` come from the Overleaf deployment namespace; ChatOL-only extras such as `OVERLEAF_ADMIN_PASSWORD`, `OVERLEAF_SESSION_COOKIE`, and `OVERLEAF_HTTP_TIMEOUT` stay in the same namespace instead of adding `CHATOL_*` aliases.
-- Parse Overleaf project metadata from HTML meta tags, matching the working `olcli` approach.
-- Hide internal compile URLs from CLI output by default.
-- Put compile cooldown/retry in workflow functions, not the CLI.
+- 检查 Overleaf 配置是否可用；
+- 列出当前会话可见的项目；
+- 用项目名或项目 ID 解析目标项目。
 
-## Phase 2: File Operations
-
-Planned next slice after Phase 1 live practice:
+### 编译和产物下载
 
 ```text
-oleaf files
-├── tree <project>
-├── download <project> <remote-path> -o <local-path>
-├── upload <project> <local-path> [--remote-path <path>]
-├── rename <project> <old-path> <new-name>
-└── delete <project> <remote-path> --apply
+oleaf compile run <project>
+oleaf compile pdf <project> -o <path>
+oleaf compile output <project> <type> -o <path>
 ```
 
-Requirements:
+用途：
 
-- All mutation commands must call importable functions.
-- Upload/delete/rename should return structured before/after results.
-- Delete requires `--apply`.
-- Reports redact project IDs and internal entity IDs.
+- 触发 Overleaf 远端编译；
+- 下载 PDF；
+- 下载日志、bbl、aux 等编译产物。
 
-## Phase 3: Safe Sync Planning
+### 文件和项目归档
 
 ```text
-oleaf sync
-├── plan <project> <dir>
-├── push <project> <dir> --apply
-├── pull <project> <dir>
-└── sync <project> <dir> --no-delete by default
+oleaf files list <project>
+oleaf files zip <project> -o <zip>
+oleaf files pull <project> <dir> [--force]
+oleaf files upload <project> <local-path> [--remote-path <name>]
+oleaf files delete <project> <remote-path> --apply
 ```
 
-Requirements:
+用途：
 
-- `plan` is the default safe entry point.
-- Deletes are never applied unless explicitly requested.
-- Ignore rules must cover LaTeX artifacts and project-local ignore files.
-- Conflict reports must be JSON serializable.
+- 查看远端文件实体；
+- 下载项目 zip；
+- 将项目源码安全解压到本地目录；
+- 上传根目录单文件；
+- 删除远端单文件，且必须显式 `--apply`。
 
-## Phase 4: Admin/User Management
+限制：
 
-Admin is intentionally separate from ordinary project workflows.
+- `files upload` 只支持根目录文件名；
+- `files delete` 不删除文件夹；
+- `files pull` 默认不覆盖本地已有文件；
+- ChatOL 不是完整双向同步器。
+
+## 计划开放能力
+
+### 单文件下载和重命名
 
 ```text
-oleaf admin
-├── doctor
-├── users list/get
-├── users create/invite
-├── users set-password --password-stdin
-├── users disable/enable
-├── users delete --apply --transfer-projects-to <user>
-├── projects list-all
-└── projects transfer <project> --to <user> --apply
+oleaf files download <project> <remote-path> -o <local-path>
+oleaf files rename <project> <old-path> <new-name>
 ```
 
-Admin prerequisites:
+开放前需要满足：
 
-- Detect whether the session is actually admin-capable.
-- Probe admin routes and Overleaf version compatibility before mutation.
-- Use `--password-stdin`; never password command arguments.
-- Use dry-run and idempotency for all mutations.
-- Emit audit events with redacted target identifiers.
+- 远端路径解析稳定；
+- 重命名返回结构化 before/after 结果；
+- 错误输出能区分“文件不存在”“路径是文件夹”“权限不足”。
 
-## Live Practice Loop
+### 安全同步
 
-For each phase:
+```text
+oleaf sync plan <project> <dir>
+oleaf sync push <project> <dir> --apply
+oleaf sync pull <project> <dir>
+```
 
-1. Add/adjust importable Python API.
-2. Add CLI thin wrapper.
-3. Add unit tests for parser/client/workflow behavior.
-4. Run CLI smoke against the server-local Overleaf endpoint.
-5. Save redacted practice markdown under `docs/` or a task report.
-6. Feed findings back into the next implementation slice.
+开放前需要满足：
+
+- `plan` 是默认入口，只输出同步计划；
+- 真实写入必须显式 `--apply`；
+- 删除默认关闭；
+- ignore 规则覆盖 LaTeX 编译产物、临时文件和项目本地 ignore 文件；
+- 冲突信息能序列化为 JSON，方便 Agent 和 CI 消费。
+
+### 管理员和用户管理
+
+```text
+oleaf admin doctor
+oleaf admin users list
+oleaf admin users create
+oleaf admin users disable
+oleaf admin users delete --apply --transfer-projects-to <user>
+oleaf admin projects transfer <project> --to <user> --apply
+```
+
+开放前需要满足：
+
+- 明确检测当前 session 是否具备管理员权限；
+- 探测 Overleaf 版本和管理员路由兼容性；
+- 密码只通过 `--password-stdin` 或私有配置传入；
+- 变更操作默认 dry-run 或要求显式 `--apply`；
+- 输出中脱敏用户 ID、项目 ID、邮箱和内部 URL。
+
+## 不提供的行为
+
+- 不在 CLI 参数中直接接收明文密码；
+- 不默认执行删除、转移、覆盖等破坏性操作；
+- 不把 ChatOL 当作 Overleaf 部署器；
+- 不直接写 MongoDB 作为常规项目操作方式。

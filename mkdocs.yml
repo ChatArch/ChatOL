@@ -39,15 +39,15 @@ plugins:
             安装与配置: Installation and Configuration
             Overleaf 连接: Overleaf Connectivity
             部署与连接边界: Deployment and Connectivity Boundaries
-            论文编译 Flow: Paper Compile Flow
+            论文编译: Paper Compile
             编译与产物: Compile and Artifacts
-            真实实践: Live Practice
+            Agent 任务闭环: Agent Task Loop
             CLI / API: CLI / API
             CLI 实战指南: CLI Guide
             Python 接口树: Python Interface Tree
             CLI 能力地图: CLI Capability Map
             路线图: Roadmap
-            开发计划: Development Plan
+            功能路线图: Feature Roadmap
 extra:
   alternate:
     - name: 中文
@@ -62,12 +62,12 @@ nav:
       - 安装与配置: overleaf-quickstart.md
   - Overleaf 连接:
       - 部署与连接边界: overleaf-service-operations.md
-  - 论文编译 Flow:
+  - 论文编译:
       - 编译与产物: compile-flow-quickstart.md
-      - 真实实践: live-practice.md
+      - Agent 任务闭环: agent-overleaf-flow.md
   - CLI / API:
       - CLI 实战指南: cli-guide.md
       - Python 接口树: interface-tree.md
       - CLI 能力地图: chatol-cli-tree.md
   - 路线图:
-      - 开发计划: development-plan.md
+      - 功能路线图: development-plan.md

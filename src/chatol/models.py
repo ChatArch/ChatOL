@@ -53,6 +53,54 @@ class Project:
 
 
 @dataclass(frozen=True)
+class ProjectFile:
+    """A file-like entity in an Overleaf project."""
+
+    path: str
+    type: str
+    id: str | None = None
+    name: str | None = None
+
+    @classmethod
+    def from_overleaf(cls, payload: dict[str, Any]) -> "ProjectFile":
+        """Normalize one item from Overleaf's `/entities` response."""
+
+        raw_path = str(payload.get("path") or payload.get("name") or "")
+        path = raw_path.lstrip("/")
+        name = str(payload.get("name") or path.rsplit("/", 1)[-1] or "")
+        return cls(
+            path=path,
+            type=str(payload.get("type") or payload.get("entityType") or "file"),
+            id=payload.get("id") or payload.get("_id") or payload.get("entity_id"),
+            name=name,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable file representation."""
+
+        data: dict[str, Any] = {"path": self.path, "type": self.type, "name": self.name}
+        if self.id:
+            data["id"] = self.id
+        return data
+
+
+@dataclass(frozen=True)
+class UploadResult:
+    """Result returned after uploading one local file."""
+
+    remote_path: str
+    entity_id: str | None = None
+    entity_type: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "remote_path": self.remote_path,
+            "entity_id": self.entity_id,
+            "entity_type": self.entity_type,
+        }
+
+
+@dataclass(frozen=True)
 class CompileOutput:
     """A single file produced by an Overleaf compile."""
 

@@ -1,12 +1,25 @@
 from pathlib import Path
+import zipfile
+from io import BytesIO
 
 from chatenv import EnvStore, get_paths
 
 from chatol import workflows
 from chatol.config import OverleafConfig
 from chatol.errors import CompileError
-from chatol.models import CompileOutput, CompileResult, Project
-from chatol.workflows import compile_project, download_output, download_pdf, get_project, list_projects
+from chatol.models import CompileOutput, CompileResult, Project, ProjectFile, UploadResult
+from chatol.workflows import (
+    compile_project,
+    delete_file,
+    download_output,
+    download_pdf,
+    download_project_zip,
+    get_project,
+    list_files,
+    list_projects,
+    pull_project,
+    upload_file,
+)
 
 
 class FakeClient:
@@ -34,6 +47,22 @@ class FakeClient:
 
     def download_output(self, project_id, output_type):
         return f"artifact:{output_type}".encode()
+
+    def list_files(self, project_id):
+        return [ProjectFile(path="main.tex", type="doc", id="doc1", name="main.tex")]
+
+    def download_project_zip(self, project_id):
+        buffer = BytesIO()
+        with zipfile.ZipFile(buffer, "w") as archive:
+            archive.writestr("main.tex", "Hello")
+            archive.writestr("refs.bib", "@book{x}")
+        return buffer.getvalue()
+
+    def upload_file(self, project_id, content, remote_path):
+        return UploadResult(remote_path=remote_path, entity_id="entity1", entity_type="doc")
+
+    def delete_file(self, project_id, remote_path):
+        return ProjectFile(path=remote_path, type="doc", id="entity1", name=remote_path)
 
 
 class RecorderClient:
@@ -138,3 +167,37 @@ def test_download_workflows_write_files(tmp_path: Path):
 
     assert pdf_path.read_bytes() == b"%PDF fake"
     assert output_path.read_bytes() == b"artifact:log"
+
+
+def test_file_workflows_zip_pull_and_upload(tmp_path: Path):
+    client = FakeClient()
+
+    assert list_files("Paper", client=client)[0].path == "main.tex"
+    zip_path = download_project_zip("Paper", tmp_path / "paper.zip", client=client)
+    pulled = pull_project("Paper", tmp_path / "paper", client=client)
+    local = tmp_path / "agent-note.tex"
+    local.write_text("% agent note\n", encoding="utf-8")
+    uploaded = upload_file("Paper", local, client=client)
+    deleted = delete_file("Paper", "agent-note.tex", client=client)
+
+    assert zip_path.read_bytes().startswith(b"PK")
+    assert sorted(path.name for path in pulled) == ["main.tex", "refs.bib"]
+    assert (tmp_path / "paper" / "main.tex").read_text(encoding="utf-8") == "Hello"
+    assert uploaded.remote_path == "agent-note.tex"
+    assert deleted.path == "agent-note.tex"
+
+
+def test_pull_project_refuses_zip_slip(tmp_path: Path):
+    class UnsafeZipClient(FakeClient):
+        def download_project_zip(self, project_id):
+            buffer = BytesIO()
+            with zipfile.ZipFile(buffer, "w") as archive:
+                archive.writestr("../escape.tex", "bad")
+            return buffer.getvalue()
+
+    try:
+        pull_project("Paper", tmp_path / "paper", client=UnsafeZipClient())
+    except ValueError as exc:
+        assert "unsafe zip path" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("expected zip-slip protection")

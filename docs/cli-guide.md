@@ -1,6 +1,6 @@
 # ChatOL CLI 实战指南
 
-这篇指南是当前 ChatOL Overleaf 能力面的实用 CLI 地图。它覆盖已实现命令树、每个命令背后的 Python API，以及来自 self-hosted Overleaf smoke 的脱敏实践边界。
+这篇指南说明 `oleaf` 的主要命令、参数、安全边界，以及每个命令背后的 Python API。它面向自托管 Overleaf 的日常项目发现、文件拉取、单文件上传、编译和产物下载。
 
 ## 当前 CLI 树
 
@@ -16,6 +16,12 @@ oleaf
 ├── projects                  # 项目发现
 │   ├── list                  # 列出当前会话可见项目
 │   └── info <project>        # 按项目名或 ID 解析项目
+├── files                     # 文件和项目归档
+│   ├── list <project>        # 列出文件实体，依赖实例支持 /entities
+│   ├── zip <project>         # 下载项目 zip
+│   ├── pull <project> <dir>  # 下载并安全解压项目 zip
+│   ├── upload <project>      # 上传一个本地文件到项目根目录
+│   └── delete <project>      # 删除一个远端文件，必须 --apply
 └── compile                   # 编译和产物下载
     ├── run <project>         # 触发编译并输出 metadata
     ├── pdf <project>         # 编译并下载 PDF
@@ -31,9 +37,10 @@ ChatOL 命令应是薄 Click 包装层。每个实质命令都调用一个可导
 ```python
 from pathlib import Path
 from chatol.client import OverleafClient
-from chatol.workflows import compile_project, download_output, download_pdf, list_projects
+from chatol.workflows import compile_project, download_output, download_pdf, list_projects, pull_project
 
 projects = list_projects()
+files = pull_project(projects[0].name, Path("source"))
 project, compile_result = compile_project(projects[0].name)
 pdf = download_pdf(project.name, Path("output.pdf"))
 log = download_output(project.name, "log", Path("output.log"))
@@ -85,6 +92,26 @@ oleaf projects info "<project-id>" --json
 
 `projects list` 默认过滤 archived 和 trashed 项目。`projects info` 支持项目名或项目 ID；自动化中如果能拿到 ID，优先用 ID。
 
+## 文件和项目归档
+
+```bash
+oleaf files list "<project-name>" --json
+oleaf files zip "<project-name>" -o project.zip --json
+oleaf files pull "<project-name>" ./source --json
+oleaf files pull "<project-name>" ./source --force --json
+oleaf files upload "<project-name>" ./source/main.tex --remote-path main.tex --json
+oleaf files delete "<project-name>" old-note.tex --apply --json
+```
+
+文件命令适合“拉取源码、修改本地文件、上传明确选择的文件”这种工作流。它不是完整同步器：
+
+- `files pull` 默认拒绝覆盖已有文件，覆盖必须显式 `--force`。
+- `files pull` 会拒绝 zip-slip 路径逃逸。
+- `files upload` 只支持项目根目录文件；不要传包含 `/` 的远端路径。
+- `files delete` 按路径删除 `doc`/`file`，不删除文件夹，并且必须显式 `--apply`。
+- 项目页缺失 `rootFolder` metadata 时，ChatOL 会使用 Socket.IO 项目树回退解析来获取根目录和文件 ID。
+- `files list` 依赖自托管 Overleaf 暴露 `/project/{project_id}/entities`；不支持时会明确返回“不支持”。
+
 ## 编译和产物
 
 ```bash
@@ -101,19 +128,27 @@ oleaf compile output "<project-name>" log -o output.log --json
 oleaf doctor                 -> chatol.workflows.client_from_env + OverleafClient.list_projects
 oleaf projects list          -> chatol.workflows.list_projects
 oleaf projects info          -> chatol.workflows.get_project
+oleaf files list             -> chatol.workflows.list_files
+oleaf files zip              -> chatol.workflows.download_project_zip
+oleaf files pull             -> chatol.workflows.pull_project
+oleaf files upload           -> chatol.workflows.upload_file
+oleaf files delete           -> chatol.workflows.delete_file
 oleaf compile run            -> chatol.workflows.compile_project
 oleaf compile pdf            -> chatol.workflows.download_pdf
 oleaf compile output         -> chatol.workflows.download_output
 
-OverleafClient.from_password -> GET/POST /login, then GET /project
-OverleafClient.list_projects -> GET /project and parse embedded project metadata
+OverleafClient.from_password -> GET/POST /login，然后 GET /project
+OverleafClient.list_projects -> GET /project，并解析嵌入的项目元数据
+OverleafClient.files zip     -> GET /project/{project_id}/download/zip
+OverleafClient.files upload  -> 读取 /project/{project_id} 或 Socket.IO 项目树，然后 POST /project/{project_id}/upload
+OverleafClient.files delete  -> 读取 /project/{project_id}/entities 和项目树，然后 DELETE /project/{project_id}/{type}/{id}
 OverleafClient.compile       -> POST /project/{project_id}/compile
 ```
 
 ## 安全注意
 
 - 密码和 session cookie 不作为普通命令参数传递。
-- JSON 默认不输出内部 compile URL、owner/updater metadata。
-- artifact 下载拒绝 cross-origin URL。
-- 报告、issue、PR 评论和截图里必须脱敏真实 URL、邮箱、cookie、token、build URL、项目/user ID。
-- 文件 mutation、sync、admin/user management 尚未实现；未来必须默认 dry-run 或显式 `--apply`。
+- JSON 默认不输出内部编译 URL、项目所有者/更新者元数据。
+- 产物下载拒绝跨源 URL。
+- 不要把真实 URL、邮箱、cookie、token、build URL、项目 ID 或用户 ID 写进公开输出、文档、issue 或 PR 评论。
+- 根目录单文件上传和受保护单文件删除可直接使用；重命名、完整同步、管理员和用户管理不在这组命令里。

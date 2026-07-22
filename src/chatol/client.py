@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 import http.cookiejar
+import html
 import json
+import mimetypes
+import time
+import uuid
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -11,9 +15,9 @@ from dataclasses import dataclass
 from http.cookiejar import Cookie
 from typing import Any
 
-from chatol.errors import AuthenticationError, CompileError, ProjectNotFoundError
-from chatol.html import extract_csrf_token, extract_projects_payloads, looks_like_login_page
-from chatol.models import CompileOutput, CompileResult, Project
+from chatol.errors import AuthenticationError, CompileError, FileOperationError, ProjectNotFoundError, UnsupportedRouteError
+from chatol.html import extract_csrf_token, extract_projects_payloads, looks_like_login_page, parse_overleaf_html
+from chatol.models import CompileOutput, CompileResult, Project, ProjectFile, UploadResult
 
 USER_AGENT = "ChatOL/0.1 (+https://github.com/ChatArch/ChatOL)"
 DEFAULT_COOKIE_NAME = "overleaf_session2"
@@ -158,6 +162,96 @@ class OverleafClient:
                 return candidate
         raise ProjectNotFoundError(f"Project not found: {project}")
 
+    def list_files(self, project_id: str) -> list[ProjectFile]:
+        """List file-like entities in a project when the Overleaf route is available."""
+
+        response = self._request("GET", f"/project/{project_id}/entities")
+        if response.status == 404:
+            raise UnsupportedRouteError("The Overleaf /entities route is not available on this instance")
+        if not response.ok:
+            raise FileOperationError(f"Failed to list project files: {response.status}")
+        payload = response.json()
+        raw_items = payload.get("entities", payload) if isinstance(payload, dict) else payload
+        if not isinstance(raw_items, list):
+            raise FileOperationError("Unexpected project entities response")
+        return [ProjectFile.from_overleaf(item) for item in raw_items if isinstance(item, dict)]
+
+    def download_project_zip(self, project_id: str) -> bytes:
+        """Download a project archive as zip bytes."""
+
+        response = self._request("GET", f"/project/{project_id}/download/zip")
+        if response.status == 404:
+            raise UnsupportedRouteError("The project zip download route is not available on this instance")
+        if not response.ok:
+            raise FileOperationError(f"Failed to download project zip: {response.status}")
+        return response.body
+
+    def upload_file(self, project_id: str, content: bytes, remote_path: str) -> UploadResult:
+        """Upload one file to the project root.
+
+        Nested remote paths require folder discovery/creation. ChatOL keeps this
+        first mutation slice root-only until folder sync is implemented and live
+        practiced.
+        """
+
+        normalized_path = remote_path.strip().replace("\\", "/").lstrip("/")
+        if not normalized_path or normalized_path.endswith("/"):
+            raise FileOperationError("remote_path must name a file")
+        if "/" in normalized_path:
+            raise UnsupportedRouteError("Nested upload paths are not implemented yet; upload to the project root first")
+
+        root_folder_id = self._root_folder_id(project_id)
+        mime_type = mimetypes.guess_type(normalized_path)[0] or "application/octet-stream"
+        body, content_type = _multipart_form_data(
+            {
+                "targetFolderId": root_folder_id,
+                "name": normalized_path,
+                "type": mime_type,
+            },
+            file_field="qqfile",
+            file_name=normalized_path,
+            file_content=content,
+            file_content_type=mime_type,
+        )
+        response = self._request(
+            "POST",
+            f"/project/{project_id}/upload?folder_id={urllib.parse.quote(root_folder_id)}",
+            body=body,
+            headers={"Content-Type": content_type},
+        )
+        if not response.ok:
+            raise FileOperationError(f"Failed to upload file: {response.status} {response.text()[:200]}")
+        try:
+            payload = response.json()
+        except json.JSONDecodeError:
+            payload = {}
+        if isinstance(payload, dict) and payload.get("success") is False:
+            raise FileOperationError(f"Failed to upload file: {payload.get('error') or 'unknown error'}")
+        return UploadResult(
+            remote_path=normalized_path,
+            entity_id=payload.get("entity_id") if isinstance(payload, dict) else None,
+            entity_type=payload.get("entity_type") if isinstance(payload, dict) else None,
+        )
+
+    def delete_file(self, project_id: str, remote_path: str) -> ProjectFile:
+        """Delete one project file by path after resolving it through `/entities`."""
+
+        normalized_path = remote_path.strip().replace("\\", "/").lstrip("/")
+        for entity in self.list_files(project_id):
+            if entity.path.lstrip("/") != normalized_path:
+                continue
+            if not entity.id:
+                entity = self._find_project_file(project_id, normalized_path) or entity
+            if not entity.id:
+                raise FileOperationError(f"Entity has no id and cannot be deleted: {remote_path}")
+            if entity.type not in {"doc", "file"}:
+                raise FileOperationError(f"Refusing to delete unsupported entity type: {entity.type}")
+            response = self._request("DELETE", f"/project/{project_id}/{entity.type}/{urllib.parse.quote(entity.id)}")
+            if not response.ok:
+                raise FileOperationError(f"Failed to delete file: {response.status}")
+            return entity
+        raise FileOperationError(f"File not found: {remote_path}")
+
     def compile_project(self, project_id: str) -> CompileResult:
         """Trigger Overleaf compilation for a project."""
 
@@ -222,6 +316,126 @@ class OverleafClient:
             raise CompileError("download_failed", f"Download failed: {response.status}")
         return response.body
 
+    def _root_folder_id(self, project_id: str) -> str:
+        """Resolve the root folder ID from the project page bootstrap metadata."""
+
+        root_item = self._root_folder_item(project_id)
+        if root_item and root_item.get("_id"):
+            return str(root_item["_id"])
+        computed = _compute_root_folder_id(project_id)
+        if computed:
+            return computed
+        raise UnsupportedRouteError("Could not discover root folder ID from project metadata")
+
+    def _root_folder_item(self, project_id: str) -> dict[str, Any] | None:
+        """Return the project root folder object from bootstrap metadata or socket payload."""
+
+        root_item = self._root_folder_item_from_html(project_id)
+        if root_item:
+            return root_item
+        return self._root_folder_item_from_socket(project_id)
+
+    def _root_folder_item_from_html(self, project_id: str) -> dict[str, Any] | None:
+        """Return the project root folder object from bootstrap metadata."""
+
+        response = self._request("GET", f"/project/{project_id}")
+        if response.status == 404:
+            raise UnsupportedRouteError("Project info page is not available for root folder discovery")
+        if not response.ok:
+            raise FileOperationError(f"Failed to fetch project page: {response.status}")
+        parser = parse_overleaf_html(response.text())
+        candidates = []
+        for meta in parser.meta:
+            content = meta.get("content", "")
+            name = meta.get("name", "").lower()
+            if content and (name == "ol-project" or "rootFolder" in html.unescape(content)):
+                candidates.append(content)
+        for candidate in candidates:
+            try:
+                payload = json.loads(html.unescape(candidate))
+            except json.JSONDecodeError:
+                continue
+            root = payload.get("rootFolder") if isinstance(payload, dict) else None
+            root_item = root[0] if isinstance(root, list) and root else root if isinstance(root, dict) else None
+            if isinstance(root_item, dict):
+                return root_item
+        return None
+
+    def _root_folder_item_from_socket(self, project_id: str) -> dict[str, Any] | None:
+        """Fetch the project tree from Overleaf's Socket.IO join payload."""
+
+        sid: str | None = None
+        try:
+            handshake = self._request("GET", f"/socket.io/1/?projectId={urllib.parse.quote(project_id)}&t={int(time.time() * 1000)}")
+            if not handshake.ok:
+                return None
+            sid = handshake.text().strip().split(":", 1)[0]
+            if not sid:
+                return None
+            for _ in range(6):
+                poll_path = f"/socket.io/1/xhr-polling/{urllib.parse.quote(sid)}?projectId={urllib.parse.quote(project_id)}&t={int(time.time() * 1000)}"
+                poll = self._request("GET", poll_path)
+                if not poll.ok:
+                    return None
+                for packet in _decode_socket_io_payload(poll.text()):
+                    project = _socket_project(packet)
+                    if project:
+                        root = project.get("rootFolder") if isinstance(project, dict) else None
+                        root_item = root[0] if isinstance(root, list) and root else root if isinstance(root, dict) else None
+                        if isinstance(root_item, dict):
+                            return root_item
+                    if packet.startswith("2::"):
+                        self._request(
+                            "POST",
+                            poll_path,
+                            body=b"2::",
+                            headers={"Content-Type": "text/plain;charset=UTF-8"},
+                        )
+        except Exception:
+            return None
+        finally:
+            if sid:
+                close_path = f"/socket.io/1/xhr-polling/{urllib.parse.quote(sid)}?projectId={urllib.parse.quote(project_id)}&t={int(time.time() * 1000)}"
+                try:
+                    self._request(
+                        "POST",
+                        close_path,
+                        body=b"0::",
+                        headers={"Content-Type": "text/plain;charset=UTF-8"},
+                    )
+                except Exception:
+                    pass
+        return None
+
+    def _find_project_file(self, project_id: str, remote_path: str) -> ProjectFile | None:
+        """Find a doc/file id in the project metadata tree."""
+
+        root_item = self._root_folder_item(project_id)
+        if not root_item:
+            return None
+        normalized_path = remote_path.strip().replace("\\", "/").lstrip("/")
+
+        def walk(folder: dict[str, Any], prefix: str = "") -> ProjectFile | None:
+            for key, entity_type in (("docs", "doc"), ("fileRefs", "file")):
+                for item in folder.get(key) or []:
+                    if not isinstance(item, dict):
+                        continue
+                    name = str(item.get("name") or "")
+                    path = f"{prefix}/{name}" if prefix else name
+                    if path == normalized_path and item.get("_id"):
+                        return ProjectFile(path=path, type=entity_type, id=str(item["_id"]), name=name)
+            for child in folder.get("folders") or []:
+                if not isinstance(child, dict):
+                    continue
+                name = str(child.get("name") or "")
+                path = f"{prefix}/{name}" if prefix else name
+                found = walk(child, path)
+                if found:
+                    return found
+            return None
+
+        return walk(root_item)
+
     def _request_json(self, method: str, path_or_url: str, payload: dict[str, Any]) -> HttpResponse:
         body = json.dumps(payload).encode("utf-8")
         return self._request(method, path_or_url, body=body, headers={"Content-Type": "application/json"})
@@ -271,6 +485,95 @@ def _safe_output_url(base_url: str, path_or_url: str) -> str:
     if (output_parts.scheme, output_parts.netloc) != (base_parts.scheme, base_parts.netloc):
         raise CompileError("unsafe_output_url", "Refusing to download a cross-origin compile output")
     return resolved
+
+
+def _multipart_form_data(
+    fields: dict[str, str],
+    *,
+    file_field: str,
+    file_name: str,
+    file_content: bytes,
+    file_content_type: str,
+) -> tuple[bytes, str]:
+    boundary = f"----chatol-{uuid.uuid4().hex}"
+    chunks: list[bytes] = []
+    for name, value in fields.items():
+        chunks.extend(
+            [
+                f"--{boundary}\r\n".encode(),
+                f'Content-Disposition: form-data; name="{name}"\r\n\r\n'.encode(),
+                str(value).encode("utf-8"),
+                b"\r\n",
+            ]
+        )
+    chunks.extend(
+        [
+            f"--{boundary}\r\n".encode(),
+            f'Content-Disposition: form-data; name="{file_field}"; filename="{file_name}"\r\n'.encode(),
+            f"Content-Type: {file_content_type}\r\n\r\n".encode(),
+            file_content,
+            b"\r\n",
+            f"--{boundary}--\r\n".encode(),
+        ]
+    )
+    return b"".join(chunks), f"multipart/form-data; boundary={boundary}"
+
+
+def _compute_root_folder_id(project_id: str) -> str | None:
+    """Infer the root folder ObjectID used by older Overleaf CE projects."""
+
+    if len(project_id) != 24 or any(char not in "0123456789abcdefABCDEF" for char in project_id):
+        return None
+    prefix = project_id[:16]
+    counter = int(project_id[16:], 16)
+    if counter <= 0:
+        return None
+    return f"{prefix}{counter - 1:08x}"
+
+
+def _decode_socket_io_payload(payload: str) -> list[str]:
+    """Decode Socket.IO 0.9 packets, including length-framed payloads."""
+
+    if not payload:
+        return []
+    if not payload.startswith("\ufffd"):
+        return [payload]
+    packets: list[str] = []
+    index = 0
+    while index < len(payload):
+        if payload[index] != "\ufffd":
+            break
+        index += 1
+        length_text = ""
+        while index < len(payload) and payload[index] != "\ufffd":
+            length_text += payload[index]
+            index += 1
+        if index >= len(payload) or payload[index] != "\ufffd":
+            break
+        index += 1
+        try:
+            packet_length = int(length_text)
+        except ValueError:
+            break
+        packets.append(payload[index : index + packet_length])
+        index += packet_length
+    return packets
+
+
+def _socket_project(packet: str) -> dict[str, Any] | None:
+    if not packet.startswith("5:::"):
+        return None
+    try:
+        payload = json.loads(packet[4:])
+    except json.JSONDecodeError:
+        return None
+    if payload.get("name") != "joinProjectResponse":
+        return None
+    args = payload.get("args") or []
+    if not args or not isinstance(args[0], dict):
+        return None
+    project = args[0].get("project")
+    return project if isinstance(project, dict) else None
 
 
 def _make_cookie(base_url: str, name: str, value: str) -> Cookie:
